@@ -105,7 +105,8 @@ public class WordPress extends Script {
                     "SELECT * FROM `" + this.dataManager.getPrefix() + "users` WHERE `ID` = '" +
                     userid + "' LIMIT 1");
             if (array.size() > 0) {
-                if (array.get("user_status").equals(0)) {
+                String activation = this.dataManager.getStringField("usermeta", "meta_value", "`user_id` = '" + userid + "' AND `meta_key1 = 'uae_user_activation_code'")
+                if (activation != null && activation.equalsIgnoreCase("active")) {
                     user.setActivated(true);
                 } else {
                     user.setActivated(false);
@@ -117,6 +118,9 @@ public class WordPress extends Script {
                     user.setRegDate((Date) array.get("user_registered"));
                 user.setPassword(array.get("user_pass").toString())
                 user.setUsername(array.get("user_login").toString());
+                return user
+            }
+        }
         return null;
     }
 
