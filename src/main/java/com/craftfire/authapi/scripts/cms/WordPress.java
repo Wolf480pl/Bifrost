@@ -82,23 +82,20 @@ public class WordPress extends Script {
     }
 
     public String getUsername(int userid) {
-        /*TODO*/
-        return null;
+        return this.dataManager.getStringField("users", "user_login", "`ID` = '" + userid + "'");;
     }
 
     public int getUserID(String username) {
-        /*TODO*/
-        return 0;
+        return this.dataManager.getIntegerField("users", "ID", "`user_login` = '" + username + "'");
     }
 
     public ScriptUser getLastRegUser() {
-        /*TODO*/
-        return null;
+        return getUser(this.dataManager.getIntegerField("SELECT `ID` FROM `" + this.dataManager.getPrefix() +
+                                                        "users` ORDER BY `ID` ASC LIMIT 1"));;
     }
 
     public ScriptUser getUser(String username) {
-        /*TODO*/
-        return null;
+        return getUser(getUserID(username));
     }
 
     public ScriptUser getUser(int userid) {
