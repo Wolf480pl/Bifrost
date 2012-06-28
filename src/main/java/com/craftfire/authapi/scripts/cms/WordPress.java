@@ -117,7 +117,6 @@ public class WordPress extends Script {
                     user.setRegDate((Date) array.get("user_registered"));
                 user.setPassword(array.get("user_pass").toString())
                 user.setUsername(array.get("user_login").toString());
-                user.setUserTitle(array.get("display_name").toString());
         return null;
     }
 
