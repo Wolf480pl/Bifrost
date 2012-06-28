@@ -99,7 +99,25 @@ public class WordPress extends Script {
     }
 
     public ScriptUser getUser(int userid) {
-        /*TODO*/
+        if (isRegistered(getUsername(userid))) {
+            ScriptUser user = new ScriptUser(this, userid, null, null);
+            HashMap<String, Object> array = this.dataManager.getArray(
+                    "SELECT * FROM `" + this.dataManager.getPrefix() + "users` WHERE `ID` = '" +
+                    userid + "' LIMIT 1");
+            if (array.size() > 0) {
+                if (array.get("user_status").equals(0)) {
+                    user.setActivated(true);
+                } else {
+                    user.setActivated(false);
+                }
+                user.setEmail(array.get("user_email").toString());
+                user.setGender(Gender.UNKNOWN);
+                user.setGroups(getUserGroups(array.get("user_login").toString()));
+                if (array.get("user_registered") instanceof Date)
+                    user.setRegDate((Date) array.get("user_registered"));
+                user.setPassword(array.get("user_pass").toString())
+                user.setUsername(array.get("user_login").toString());
+                user.setUserTitle(array.get("display_name").toString());
         return null;
     }
 
