@@ -354,8 +354,8 @@ public class WordPress extends Script {
         HashMap<String, Object> array = this.dataManager.getArray(
                 "SELECT * FROM `" + this.dataManager.getPrefix() +
                 "comments` WHERE `comment_ID` = '" + postid);
-        int board = this.dataManager.getIntegerField("posts", "post_type",
-                "`ID` = '" + array.get("comment_post_ID") + "'");
+        int board = this.dataManager.getStringField("posts", "post_type",
+                "`ID` = '" + array.get("comment_post_ID") + "'").equalsIgnoreCase("post") ? 0 : 1 ;
         Post post = new Post(this,
                 Integer.parseInt(array.get("comment_ID").toString()),
                 Integer.parseInt(array.get("comment_post_ID").toString()),
@@ -367,7 +367,7 @@ public class WordPress extends Script {
         return post;
     }
 
-    public void updatePost(Post post) {
+    public void updatePost(Post post) throws SQLException {
         HashMap<String, Object> data = new HashMap<String, Object>();
         data.put("comment_post_ID", post.getThreadID());
         if (post.getAuthor() != null) {
@@ -380,36 +380,69 @@ public class WordPress extends Script {
         }
         data.put("comment_date", new Date(new java.util.Date().getTime()));
         data.put("comment_date_gtm", null /*TODO*/);
-        /*TODO*/
+        data.put("comment_content", post.getBody());
+        this.dataManager.updateFields(data, "comments", "`comment_ID` = '"
+                                                    + post.getID() + "'");
     }
 
-    public void createPost(Post post) {
-        /*TODO*/
+    public void createPost(Post post) throws SQLException {
+        HashMap<String, Object> data = new HashMap<String, Object>();
+        data.put("comment_post_ID", post.getThreadID());
+        if (post.getAuthor() != null) {
+            data.put("comment_author", (post.getAuthor().getNickname() != null)
+                    ? post.getAuthor().getNickname() :
+                        post.getAuthor().getUsername());
+            data.put("comment_author_email", post.getAuthor().getEmail());
+            data.put("comment_author_IP", post.getAuthor().getLastIP());
+            data.put("user_id", post.getAuthor().getID());
+        }
+        data.put("comment_date", new Date(new java.util.Date().getTime()));
+        data.put("comment_date_gtm", null /*TODO*/);
+        data.put("comment_content", post.getBody());
+        this.dataManager.insertFields(data, "comments");
+        post.setID(this.dataManager.getLastID("comment_ID", "comments"));
     }
 
     public int getThreadCount(String username) {
-        /*TODO*/
-        return 0;
+        return this.dataManager.getCount("posts", "`post_author` = '" +
+                                            getUserID(username) + "'");
     }
 
     public int getTotalThreadCount() {
-        /*TODO*/
-        return 0;
+        return this.dataManager.getCount("posts");
     }
 
     public com.craftfire.authapi.classes.Thread getLastThread() {
-        /*TODO*/
-        return null;
+        return getThread(this.dataManager.getLastID("post_id", "posts"));
     }
 
     public Thread getLastUserThread(String username) {
-        /*TODO*/
-        return null;
+        return getThread(this.dataManager.getLastID("post_id", "posts",
+                        "`post_author` = '" + getUserID(username) + "'"));
     }
 
     public Thread getThread(int threadid) {
-        /*TODO*/
-        return null;
+        HashMap<String, Object> array = this.dataManager.getArray(
+                 "SELECT * FROM '" + this.dataManager.getPrefix() +
+                 "posts' WHERE `ID` = '" + threadid + "'");
+        List<HashMap<String, Object>> array1 = this.dataManager.getArrayList(
+                "SELECT `comment_ID` FROM `" + this.dataManager.getPrefix() +
+                "comments` WHERE `comment_post_ID` = " + threadid +
+                "' ORDER BY `post_id` ASC");
+        int firstpost = Integer.parseInt(array1.get(0).get("comment_ID").toString());
+        int lastpost = Integer.parseInt(array1.get(array1.size()).get("comment_ID")
+                                                                        .toString());
+        int boardid = array.get("post_type").toString()
+                        .equalsIgnoreCase("post") ? 0 : 1;
+        Thread thread = new Thread(this, firstpost, lastpost, threadid, boardid);
+        thread.setAuthor(getUser(Integer.parseInt(array.get("post_author")
+                                                           .toString())));
+        thread.setBody(array.get("post_content").toString());
+        thread.setSubject("post_title");
+        thread.setThreadDate(new java.util.Date((
+                (Date) array.get("post_date")).getTime()));
+        thread.setReplies(Integer.parseInt(array.get("comment_count").toString()));
+        return thread;
     }
 
     public List<Thread> getThreads(int limit) {
