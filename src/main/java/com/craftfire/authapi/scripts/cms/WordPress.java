@@ -19,6 +19,7 @@
  */
 package com.craftfire.authapi.scripts.cms;
 
+import java.net.URLEncoder;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
@@ -42,7 +43,7 @@ public class WordPress extends Script {
     private final String scriptName = "wordpress";
     private final String shortName = "wp";
     private final String encryption = "sha1"; /*TODO*/
-    private final String[] versionRanges = {"3.4.0"}; /*TODO: Does it wor with other versions?*/
+    private final String[] versionRanges = {"3.4.0"}; /*TODO: Does it work with other versions?*/
     private final String userVersion;
     private final DataManager dataManager;
     private String currentUsername = null;
@@ -242,27 +243,51 @@ public class WordPress extends Script {
     }
 
     public List<Group> getGroups(int limit) {
-        /*TODO*/
-        return null;
+        if (limit > getGroupCount() | limit <= 0) limit = getGroupCount();
+        List<Group> groups = new ArrayList<Group>();
+        for (int i = 1; i <= limit; ++i) {  //GroupID 0 might be used for none group if needed.
+            groups.add(getGroup(i));
+        }
+        return groups;
     }
 
     public Group getGroup(int groupid) {
-        /*TODO*/
-        return null;
+        String groupname = "";
+        switch (groupid) {
+        case 1: groupname = "Subscriber";
+                break;
+        case 2: groupname = "Contributor";
+                break;
+        case 3: groupname = "Author";
+                break;
+        case 4: groupname = "Editor";
+                break;
+        case 5: groupname = "Administrator";
+                break;
+        case 6: groupname = "Super Admin";
+                break;                
+        default: return null;
+        }
+        Group group = new Group(this, groupid, groupname);
+        //TODO: Add users to group, waiting for php unserialize
+        return group;
     }
 
     public Group getGroup(String group) {
-        /* TODO */
+        List<Group> groups = getGroups(0);
+        for (Group grp : groups){
+            if (grp.getName().equalsIgnoreCase(group)) return grp;
+        }
         return null;
     }
 
     public List<Group> getUserGroups(String username) {
-        /*TODO*/
+        //TODO, waiting for php unserialize
         return null;
     }
 
     public void updateGroup(Group group) {
-        /*TODO*/
+        //TODO, waiting for php unserialize
     }
 
     public void createGroup(Group group) {
@@ -330,7 +355,8 @@ public class WordPress extends Script {
                 "comments` ORDER BY `post_id` ASC" + limitstring);
         List<Post> posts = new ArrayList<Post>();
         for (HashMap<String, Object> record : array) {
-            posts.add(getPost(Integer.parseInt(record.get("comment_ID").toString())));
+            posts.add(getPost(Integer.parseInt(
+                    record.get("comment_ID").toString())));
         }
         return posts;
     }
@@ -345,7 +371,8 @@ public class WordPress extends Script {
                 "' ORDER BY `post_id` ASC" + limitstring);
         List<Post> posts = new ArrayList<Post>();
         for (HashMap<String, Object> record : array) {
-            posts.add(getPost(Integer.parseInt(record.get("comment_ID").toString())));
+            posts.add(getPost(Integer.parseInt(
+                    record.get("comment_ID").toString())));
         }
         return posts;
     }
@@ -397,7 +424,7 @@ public class WordPress extends Script {
             data.put("user_id", post.getAuthor().getID());
         }
         data.put("comment_date", new Date(new java.util.Date().getTime()));
-        data.put("comment_date_gtm", null /*TODO*/);
+        data.put("comment_date_gmt", null /*TODO*/);
         data.put("comment_content", post.getBody());
         this.dataManager.insertFields(data, "comments");
         post.setID(this.dataManager.getLastID("comment_ID", "comments"));
@@ -423,8 +450,8 @@ public class WordPress extends Script {
 
     public Thread getThread(int threadid) {
         HashMap<String, Object> array = this.dataManager.getArray(
-                 "SELECT * FROM '" + this.dataManager.getPrefix() +
-                 "posts' WHERE `ID` = '" + threadid + "'");
+                 "SELECT * FROM `" + this.dataManager.getPrefix() +
+                 "posts` WHERE `ID` = '" + threadid + "'");
         List<HashMap<String, Object>> array1 = this.dataManager.getArrayList(
                 "SELECT `comment_ID` FROM `" + this.dataManager.getPrefix() +
                 "comments` WHERE `comment_post_ID` = " + threadid +
@@ -434,6 +461,9 @@ public class WordPress extends Script {
                                                                         .toString());
         int boardid = array.get("post_type").toString()
                         .equalsIgnoreCase("post") ? 0 : 1;
+        if (boardid > 0 && 
+                !array.get("post_type").toString().equalsIgnoreCase("page"))
+            return null;
         Thread thread = new Thread(this, firstpost, lastpost, threadid, boardid);
         thread.setAuthor(getUser(Integer.parseInt(array.get("post_author")
                                                            .toString())));
@@ -442,30 +472,68 @@ public class WordPress extends Script {
         thread.setThreadDate(new java.util.Date((
                 (Date) array.get("post_date")).getTime()));
         thread.setReplies(Integer.parseInt(array.get("comment_count").toString()));
+        thread.setSticky(false); //TODO, (table: options, option_name: sticky_posts) waiting for php unserialize
+        thread.setLocked(array.get("comment_status").toString().equalsIgnoreCase("closed"));
         return thread;
     }
 
     public List<Thread> getThreads(int limit) {
-        /*TODO*/
-        return null;
+        String limitstring = "";
+        if (limit > 0)
+            limitstring = " LIMIT 0," + limit;
+        List<HashMap<String, Object>> array = this.dataManager.getArrayList(
+                "SELECT `ID` FROM `" + this.dataManager.getPrefix() + "posts`"
+                + limitstring);
+        List<Thread> threads = new ArrayList<Thread>();
+        for (HashMap<String,Object> record : array)
+            threads.add(getThread(Integer.parseInt(
+                    record.get("ID").toString())));
+        return threads;
     }
 
-    public void updateThread(Thread thread) {
-        /*TODO*/
+    public void updateThread(Thread thread) throws SQLException {
+        HashMap<String, Object> data = new HashMap<String, Object>();/*this.dataManager.getArray(
+                "SELECT * FROM `" + this.dataManager.getPrefix() +
+                "posts` WHERE `ID` = '" + thread.getID() + "'");*/
+        data.put("post_author", thread.getAuthor().getID());
+        data.put("post_date", new Date(thread.getThreadDate().getTime()));
+        data.put("post_date_gmt", null /*TODO*/);
+        data.put("post_content", thread.getBody());
+        data.put("post_title", thread.getSubject());
+        data.put("post_name", URLEncoder.encode(thread.getSubject().toLowerCase().replaceAll(" ", "-")));
+        data.put("post_modified", new Date(new java.util.Date().getTime()));
+        data.put("post_modified_gmt", null /*TODO*/);
+        data.put("post_type", thread.getBoardID() == 0 ? "post" : "page");
+        data.put("comment_count", thread.getReplies());
+        data.put("comment_status", thread.isLocked() ? "closed" : "open");
+        this.dataManager.updateFields(data, "posts", "`ID` = '" + thread.getID() + "'");
+        //TODO update sticky, waiting for php (un)serialize
     }
 
-    public void createThread(Thread thread) {
-        /*TODO*/
+    public void createThread(Thread thread) throws SQLException {
+        HashMap<String, Object> data = new HashMap<String, Object>();
+        data.put("post_author", thread.getAuthor().getID());
+        data.put("post_date", new Date(new java.util.Date().getTime()));
+        data.put("post_date_gmt", null /*TODO*/);
+        data.put("post_content", thread.getBody());
+        data.put("post_title", thread.getSubject());
+        data.put("post_name", URLEncoder.encode(thread.getSubject().toLowerCase().replaceAll(" ", "-")));
+        data.put("post_modified", new Date(new java.util.Date().getTime()));
+        data.put("post_modified_gmt", null /*TODO*/);
+        data.put("post_type", thread.getBoardID() == 0 ? "post" : "page");
+        data.put("comment_count", thread.getReplies());
+        data.put("post_type", thread.getBoardID() == 0 ? "post" : "page");
+        this.dataManager.insertFields(data, "posts");
+        thread.setID(this.dataManager.getLastID("ID", "posts"));
+        //TODO update sticky, waiting for php (un)serialize
     }
 
     public int getUserCount() {
-        /*TODO*/
-        return 0;
+        return this.dataManager.getCount("users");
     }
 
     public int getGroupCount() {
-        /*TODO*/
-        return 0;
+        return 6;   // 6 WordPress roles: Subscriber, Contributor, Author, Editor, Administrator, Super Admin 
     }
 
     public String getHomeURL() {
@@ -479,30 +547,30 @@ public class WordPress extends Script {
     }
 
     public List<String> getIPs(String username) {
-        /*TODO*/
+        // Not supported by WordPress
         return null;
     }
 
     public List<Ban> getBans(int limit) {
-        /*TODO*/
+        // Not supported by WordPress
         return null;
     }
 
     public void updateBan(Ban ban) {
-        /*TODO*/
+        // Not supported by WordPress
     }
 
     public void addBan(Ban ban) {
-        /*TODO*/
+        // Not supported by WordPress
     }
 
     public int getBanCount() {
-        /*TODO*/
+        // Not supported by WordPress
         return 0;
     }
 
     public boolean isBanned(String string) {
-        /*TODO*/
+        // Not supported by WordPress
         return false;
     }
 
