@@ -22,6 +22,7 @@ package com.craftfire.authapi;
 import com.craftfire.authapi.classes.Script;
 import com.craftfire.authapi.exceptions.UnsupportedScript;
 import com.craftfire.authapi.exceptions.UnsupportedVersion;
+import com.craftfire.authapi.scripts.cms.WordPress;
 import com.craftfire.authapi.scripts.forum.SMF;
 import com.craftfire.authapi.scripts.forum.XenForo;
 import com.craftfire.commons.DataManager;
@@ -34,7 +35,8 @@ public class ScriptAPI {
 
     public enum Scripts {
         SMF("simplemachines"),
-        XF("xenforo");
+        XF("xenforo"),
+        WP("wordpress");
         
         public String alias;
         Scripts(String alias) {
@@ -88,8 +90,13 @@ public class ScriptAPI {
         switch (this.scriptName) {
             case SMF:
                 this.script = new SMF(this.scriptName, this.version, this.dataManager);
+                break;
             case XF:
                 this.script = new XenForo(this.scriptName, this.version, this.dataManager);
+                break;
+            case WP:
+                this.script = new WordPress(this.scriptName, this.version, this.dataManager);
+                break;
         }
     }
 

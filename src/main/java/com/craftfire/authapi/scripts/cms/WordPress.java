@@ -43,7 +43,7 @@ import com.craftfire.commons.enums.Encryption;
 public class WordPress extends Script {
     private final String scriptName = "wordpress";
     private final String shortName = "wp";
-    private final String encryption = "sha1"; /*TODO*/
+    private final String encryption = "phpass";
     private final String[] versionRanges = {"3.4.0"}; /*TODO: Does it work with other versions?*/
     private final String userVersion;
     private final DataManager dataManager;
@@ -133,8 +133,7 @@ public class WordPress extends Script {
                 user.setGroups(getUserGroups(array.get("user_login")
                                                     .toString()));
                 if (array.get("user_registered") instanceof Date)
-                    user.setRegDate(new java.util.Date(
-                            ((Date) array.get("user_registered")).getTime()));
+                    user.setRegDate((Date) array.get("user_registered"));
                 user.setPassword(array.get("user_pass").toString());
                 user.setUsername(array.get("user_login").toString());
                 user.setAvatarURL("http://www.gravatar.com/avatar/" +
@@ -394,8 +393,7 @@ public class WordPress extends Script {
                 board);
         post.setAuthor(getUser(Integer.parseInt(array.get("user_id").toString())));
         post.setBody(array.get("comment_content").toString());
-        post.setPostDate(new java.util.Date((
-                (Date) array.get("comment_date")).getTime()));
+        post.setPostDate((Date) array.get("comment_date"));
         return post;
     }
 
@@ -474,8 +472,7 @@ public class WordPress extends Script {
                                                            .toString())));
         thread.setBody(array.get("post_content").toString());
         thread.setSubject("post_title");
-        thread.setThreadDate(new java.util.Date((
-                (Date) array.get("post_date")).getTime()));
+        thread.setThreadDate((Date) array.get("post_date"));
         thread.setReplies(Integer.parseInt(array.get("comment_count").toString()));
         thread.setSticky(false); //TODO, (table: options, option_name: sticky_posts) waiting for php unserialize
         thread.setLocked(array.get("comment_status").toString().equalsIgnoreCase("closed"));
