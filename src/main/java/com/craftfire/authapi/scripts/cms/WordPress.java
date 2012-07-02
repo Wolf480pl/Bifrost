@@ -38,6 +38,7 @@ import com.craftfire.authapi.classes.ScriptUser;
 import com.craftfire.authapi.classes.Thread;
 import com.craftfire.commons.CraftCommons;
 import com.craftfire.commons.DataManager;
+import com.craftfire.commons.enums.Encryption;
 
 public class WordPress extends Script {
     private final String scriptName = "wordpress";
@@ -80,13 +81,17 @@ public class WordPress extends Script {
     }
 
     public boolean authenticate(String username, String password) {
-        /*TODO*/
-        return false;
+        String hash = this.dataManager.getStringField("users", "user_pass",
+                "`user_login` = '" + username + "'");
+        if (hash == null) return false;
+        return hashPassword(hash, password).equals(hash);
     }
 
     public String hashPassword(String salt, String password) {
-        /*TODO*/
-        return null;
+        String hash = CraftCommons.encrypt(Encryption.PHPASS, password, salt);
+        if (hash.startsWith("*")) hash = CraftCommons.encrypt(
+                CraftCommons.unixHashIdentify(salt), password, salt);
+        return hash;
     }
 
     public String getUsername(int userid) {
