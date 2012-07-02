@@ -38,7 +38,7 @@ import com.craftfire.authapi.classes.Thread;
 import com.craftfire.authapi.exceptions.UnsupportedFunction;
 import com.craftfire.authapi.exceptions.UnsupportedVersion;
 import com.craftfire.commons.DataManager;
-import com.craftfire.commons.DataType;
+import com.craftfire.commons.enums.DataType;
 
 public class AuthDebug {
     static AuthAPI authAPI;

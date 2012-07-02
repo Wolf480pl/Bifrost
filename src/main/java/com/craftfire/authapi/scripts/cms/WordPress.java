@@ -138,7 +138,7 @@ public class WordPress extends Script {
                 user.setPassword(array.get("user_pass").toString());
                 user.setUsername(array.get("user_login").toString());
                 user.setAvatarURL("http://www.gravatar.com/avatar/" +
-                        CraftCommons.md5(array.get("user_email")
+                        CraftCommons.encrypt(Encryption.MD5, array.get("user_email")
                                     .toString().toLowerCase()));
                 user.setFirstName(this.dataManager.getStringField("usermeta",
                         "meta_value", "`user_id` = '" + user.getID() +
