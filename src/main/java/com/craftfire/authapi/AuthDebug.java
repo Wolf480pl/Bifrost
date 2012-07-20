@@ -266,28 +266,37 @@ public class AuthDebug {
 			print(seperate);
 
 			print(script.toString() + " - " + version + " - BAN CLASS");
-			Ban ban = authAPI.getScript().getBans(1).get(0);
-			printResult("getEmail", ban.getEmail());
-			printResult("getIP", ban.getIP());
-			printResult("getID", "" + ban.getID());
-			printResult("getNotes", ban.getNotes());
-			printResult("getReason", ban.getReason());
-			printResult("getUsername", ban.getName());
-			printResult("getEndDate", "" + ban.getEndDate());
-			printResult("getStartDate", "" + ban.getStartDate());
-			printResult("getTimeLength", "" + ban.getTimeLength());
-			printResult("getTimeRemaining", "" + ban.getTimeRemaining());
-			printResult("getUserID", "" + ban.getUserID());
-			printResult("isPermanent", "" + ban.isPermanent());
-
+			Ban ban = null;
+			if (authAPI.getScript().getBans(1) != null) {
+			    ban = authAPI.getScript().getBans(1).get(0);
+			    printResult("getEmail", ban.getEmail());
+	            printResult("getIP", ban.getIP());
+	            printResult("getID", "" + ban.getID());
+	            printResult("getNotes", ban.getNotes());
+	            printResult("getReason", ban.getReason());
+	            printResult("getUsername", ban.getName());
+	            printResult("getEndDate", "" + ban.getEndDate());
+	            printResult("getStartDate", "" + ban.getStartDate());
+	            printResult("getTimeLength", "" + ban.getTimeLength());
+	            printResult("getTimeRemaining", "" + ban.getTimeRemaining());
+	            printResult("getUserID", "" + ban.getUserID());
+	            printResult("isPermanent", "" + ban.isPermanent());
+	        } else {
+	            print("NOT SUPPORTED");
+	        }
+			
 			print(seperate);
 
 			print(script.toString() + " - " + version + " - BAN UPDATING");
-			temp = ban.getReason();
-			ban.setReason("Debug");
-			ban.updateBan();
-			ban.setReason(temp);
-			ban.updateBan();
+			if (ban != null) {
+			    temp = ban.getReason();
+			    ban.setReason("Debug");
+			    ban.updateBan();
+			    ban.setReason(temp);
+			    ban.updateBan();
+			} else {
+			    print("NOT SUPPORTED");
+			}
 
 			print(seperate);
 
@@ -300,22 +309,27 @@ public class AuthDebug {
 			print(seperate);
 
 			print(script.toString() + " - " + version + " - GROUP CLASS");
-			Group group = user.getUserGroups().get(0);
-			printResult("getName", group.getName());
-			printResult("getID", "" + group.getID());
-			printResult("getDescription", group.getDescription());
-			printResult("getUserCount", "" + group.getUserCount());
-			printResult("getUsers", "" + group.getUsers());
+			Group group = null;
+			if (user.getUserGroups() != null) {
+			    group = user.getUserGroups().get(0);
+	            printResult("getName", group.getName());
+	            printResult("getID", "" + group.getID());
+	            printResult("getDescription", group.getDescription());
+	            printResult("getUserCount", "" + group.getUserCount());
+	            printResult("getUsers", "" + group.getUsers());
+			}
 
 			print(seperate);
 
 			print(script.toString() + " - " + version + " - GROUP UPDATING");
-			temp = group.getName();
-			group.setName("Debug");
-			group.updateGroup();
-			group.setName(temp);
-			group.updateGroup();
-
+			if (group != null) {
+			    temp = group.getName();
+			    group.setName("Debug");
+	            group.updateGroup();
+	            group.setName(temp);
+	            group.updateGroup();
+	        }
+			
 			print(seperate);
 
 			print(script.toString() + " - " + version + " - GROUP CREATE");
