@@ -1,8 +1,5 @@
 /*
- * This file is part of AuthAPI.
- *
- * Copyright (c) 2011-2012, CraftFire <http://www.craftfire.com/>
- * AuthAPI is licensed under the GNU Lesser General Public License.
+ * This file is part of AuthAPI <http://www.craftfire.com/>.
  *
  * AuthAPI is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -25,40 +22,22 @@ import com.craftfire.authapi.classes.ScriptUser;
 import com.craftfire.authapi.exceptions.UnsupportedFunction;
 import com.craftfire.authapi.exceptions.UnsupportedScript;
 import com.craftfire.authapi.exceptions.UnsupportedVersion;
-import com.craftfire.commons.DataManager;
-import com.craftfire.commons.enums.DataType;
+import com.craftfire.commons.managers.DataManager;
+import com.craftfire.commons.managers.LoggingManager;
 
+//TODO: Javadoc, analytics and logging.
 public class AuthAPI {
     private final ScriptAPI scriptAPI;
     private final Script script;
     private final DataManager dataManager;
-
-    public AuthAPI(Scripts script, String version, String host, int port, String database, String username,
-                   String password, String prefix) throws UnsupportedVersion {
-        this.dataManager = new DataManager(DataType.MYSQL, username, password);
-		this.dataManager.setHost(host);
-		this.dataManager.setPort(port);
-		this.dataManager.setDatabase(database);
-		this.dataManager.setPrefix(prefix);
-        this.scriptAPI = new ScriptAPI(script, version, this.dataManager);
-        this.script = this.scriptAPI.getScript();
-    }
+	private final LoggingManager loggingManager;
 
     public AuthAPI(Scripts script, String version, DataManager dataManager) throws UnsupportedVersion {
         this.scriptAPI = new ScriptAPI(script, version, dataManager);
         this.script = this.scriptAPI.getScript();
         this.dataManager = dataManager;
-    }
-
-    public AuthAPI(String script, String version, String host, int port, String database, String username,
-                   String password, String prefix) throws UnsupportedScript, UnsupportedVersion {
-		this.dataManager = new DataManager(DataType.MYSQL, username, password);
-		this.dataManager.setHost(host);
-		this.dataManager.setPort(port);
-		this.dataManager.setDatabase(database);
-		this.dataManager.setPrefix(prefix);
-        this.scriptAPI = new ScriptAPI(script, version, this.dataManager);
-        this.script = this.scriptAPI.getScript();
+		this.loggingManager = new LoggingManager("CraftFire.AuthAPI", "[AuthAPI]");
+		this.loggingManager.debug("Initialized AuthAPI");
     }
 
     public AuthAPI(String script, String version, DataManager dataManager) throws UnsupportedScript,
@@ -66,11 +45,17 @@ public class AuthAPI {
         this.scriptAPI = new ScriptAPI(script, version, dataManager);
         this.script = this.scriptAPI.getScript();
         this.dataManager = dataManager;
+		this.loggingManager = new LoggingManager("CraftFire.AuthAPI", "[AuthAPI]");
+		this.loggingManager.debug("Initialized AuthAPI");
     }
 
     public Script getScript() {
         return this.script;
     }
+
+	public LoggingManager getLoggingManager() {
+		return this.loggingManager;
+	}
 
     public ScriptUser getUser(String username) throws UnsupportedFunction {
         return this.script.getUser(username);

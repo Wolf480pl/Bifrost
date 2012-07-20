@@ -43,9 +43,10 @@ import com.craftfire.authapi.classes.ScriptUser;
 import com.craftfire.authapi.classes.Thread;
 import com.craftfire.authapi.exceptions.UnsupportedFunction;
 import com.craftfire.commons.CraftCommons;
-import com.craftfire.commons.DataManager;
 import com.craftfire.commons.enums.Encryption;
+import com.craftfire.commons.managers.DataManager;
 
+//TODO: Convert arrays to use Result class
 public class XenForo extends Script {
     private final String scriptName = "xenforo";
     private final String shortName = "xf";

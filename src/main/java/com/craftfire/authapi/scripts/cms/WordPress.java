@@ -38,7 +38,7 @@ import com.craftfire.authapi.classes.Script;
 import com.craftfire.authapi.classes.ScriptUser;
 import com.craftfire.authapi.classes.Thread;
 import com.craftfire.commons.CraftCommons;
-import com.craftfire.commons.DataManager;
+import com.craftfire.commons.managers.DataManager;
 import com.craftfire.commons.enums.Encryption;
 
 public class WordPress extends Script {
