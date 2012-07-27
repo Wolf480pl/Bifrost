@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import com.craftfire.authapi.AuthAPI;
 import com.craftfire.authapi.ScriptAPI;
 import com.craftfire.authapi.classes.Ban;
 import com.craftfire.authapi.classes.Gender;
@@ -56,10 +57,10 @@ public class WordPress extends Script {
     private final DataManager dataManager;
     private String currentUsername = null;
 
-    public WordPress(ScriptAPI.Scripts script, String version, DataManager dataManager) {
-        super(script, version);
+    public WordPress(AuthAPI authAPI, ScriptAPI.Scripts script, String version) {
+        super(authAPI, script, version);
         this.userVersion = version;
-        this.dataManager = dataManager;
+        this.dataManager = authAPI.getDataManager();
     }
 
     @Override
@@ -222,7 +223,11 @@ public class WordPress extends Script {
         this.dataManager.updateFields(data, "usermeta", "`user_id` = '"
                     + user.getID() + "' AND `meta_key` = 'wp-last-login'");
         data.clear();
-        setUserGroups(user.getUsername(), user.getUserGroups());
+        try {
+            setUserGroups(user.getUsername(), user.getUserGroups());
+        } catch (UnsupportedFunction e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -277,7 +282,11 @@ public class WordPress extends Script {
         this.dataManager.insertFields(data, "usermeta");
         data.put("meta_key", "wp_capabilities");
         
-        setUserGroups(user.getUsername(), user.getUserGroups());
+        try {
+            setUserGroups(user.getUsername(), user.getUserGroups());
+        } catch (UnsupportedFunction e) {
+            e.printStackTrace();
+        }
         // data.put("meta_value", "a:1:{s:10:\"subscriber\";s:1:\"1\";}");
         
         this.dataManager.insertFields(data, "usermeta");
