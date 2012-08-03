@@ -224,8 +224,9 @@ public abstract interface ScriptInterface {
 	 * @see Group
 	 * @see List
 	 * @throws UnsupportedFunction if the function is not supported by the script.
+	 * @throws SQLException 
 	 */
-	public List<Group> getUserGroups(String username) throws UnsupportedFunction;
+	public List<Group> getUserGroups(String username) throws UnsupportedFunction, SQLException;
 
 	/**
 	 * Updates the Group object with whatever values set by the user.

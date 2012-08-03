@@ -228,7 +228,7 @@ public class ScriptAPI implements ScriptInterface {
 
     @Override
     @SuppressWarnings("unchecked")
-    public List<Group> getUserGroups(String username) throws UnsupportedFunction {
+    public List<Group> getUserGroups(String username) throws UnsupportedFunction, SQLException {
         if (Cache.contains(CacheGroup.USER_GROUP, username)) {
             return (List<Group>) Cache.get(CacheGroup.USER_GROUP, username);
         }

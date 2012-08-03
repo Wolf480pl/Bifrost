@@ -63,7 +63,7 @@ public abstract interface ScriptUserInterface {
 
     public void setLastName(String lastname);
 
-    public List<Group> getGroups() throws UnsupportedFunction;
+    public List<Group> getGroups() throws UnsupportedFunction, SQLException;
 
     public void setGroups(List<Group> groups);
 

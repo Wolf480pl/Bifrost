@@ -169,7 +169,7 @@ public class Script implements ScriptInterface {
 	}
 
 	@Override
-	public List<Group> getUserGroups(String username) throws UnsupportedFunction {
+	public List<Group> getUserGroups(String username) throws UnsupportedFunction, SQLException {
 		throw new UnsupportedFunction();
 	}
 

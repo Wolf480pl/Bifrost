@@ -143,7 +143,7 @@ public class ScriptUser implements ScriptUserInterface {
     @Override
     @SuppressWarnings("unchecked")
     //TODO
-    public List<Group> getGroups() throws UnsupportedFunction {
+    public List<Group> getGroups() throws UnsupportedFunction, SQLException {
         List<Group> temp;
         if (this.groups.size() > 0) {
             return this.groups;
