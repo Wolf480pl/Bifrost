@@ -19,25 +19,24 @@
  */
 package com.craftfire.authapi.classes;
 
+import com.craftfire.authapi.AuthAPI;
+import com.craftfire.authapi.enums.CacheGroup;
+import com.craftfire.authapi.exceptions.UnsupportedFunction;
+
 import java.sql.SQLException;
 import java.util.List;
 
-import com.craftfire.authapi.exceptions.UnsupportedFunction;
-
 public class Group implements GroupInterface {
-    private final Script script;
     private int groupid, usercount;
     private String groupname, groupdescription;
     private List<ScriptUser> users;
 
-    public Group(Script script, int groupid, String groupname) {
-        this.script = script;
+    public Group(int groupid, String groupname) {
         this.groupid = groupid;
         this.groupname = groupname;
     }
 
-    public Group(Script script, String groupname) {
-        this.script = script;
+    public Group(String groupname) {
         this.groupname = groupname;
     }
 
@@ -93,11 +92,28 @@ public class Group implements GroupInterface {
 
     @Override
     public void updateGroup() throws SQLException, UnsupportedFunction {
-        this.script.updateGroup(this);
+        AuthAPI.getInstance().getScriptAPI().updateGroup(this);
     }
 
     @Override
     public void createGroup() throws SQLException, UnsupportedFunction {
-        this.script.createGroup(this);
+        AuthAPI.getInstance().getScriptAPI().createGroup(this);
+    }
+
+    public static boolean hasCache(Object id) {
+        return Cache.contains(CacheGroup.GROUP, id);
+    }
+
+    public static void addCache(Group group) {
+        Cache.put(CacheGroup.GROUP, group.getID(), group);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static Group getCache(Object id) {
+        Group temp = null;
+        if (Cache.contains(CacheGroup.GROUP, id)) {
+            temp = (Group) Cache.get(CacheGroup.GROUP, id);
+        }
+        return temp;
     }
 }

@@ -19,15 +19,16 @@
  */
 package com.craftfire.authapi.classes;
 
+import com.craftfire.authapi.AuthAPI;
+import com.craftfire.authapi.enums.CacheGroup;
+import com.craftfire.authapi.exceptions.UnsupportedFunction;
+
 import java.sql.SQLException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
-import com.craftfire.authapi.exceptions.UnsupportedFunction;
-
 public class PrivateMessage implements PrivateMessageInterface {
-    private final Script script;
     private int pmid;
     private String subject, body;
     private ScriptUser sender;
@@ -39,12 +40,10 @@ public class PrivateMessage implements PrivateMessageInterface {
     private boolean deletedbysender;
 
     public PrivateMessage(Script script, int pmid) {
-        this.script = script;
         this.pmid = pmid;
     }
 
     public PrivateMessage(Script script, ScriptUser sender, List<ScriptUser> recipients) {
-        this.script = script;
         this.sender = sender;
         this.recipients = recipients;
     }
@@ -160,11 +159,28 @@ public class PrivateMessage implements PrivateMessageInterface {
 
     @Override
     public void updatePrivateMessage() throws SQLException, UnsupportedFunction {
-        this.script.updatePrivateMessage(this);
+        AuthAPI.getInstance().getScriptAPI().updatePrivateMessage(this);
     }
 
     @Override
     public void createPrivateMessage() throws SQLException, UnsupportedFunction {
-        this.script.createPrivateMessage(this);
+        AuthAPI.getInstance().getScriptAPI().createPrivateMessage(this);
+    }
+
+    public static boolean hasCache(Object id) {
+        return Cache.contains(CacheGroup.PM, id);
+    }
+
+    public static void addCache(PrivateMessage privateMessage) {
+        Cache.put(CacheGroup.PM, privateMessage.getID(), privateMessage);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static PrivateMessage getCache(Object id) {
+        PrivateMessage temp = null;
+        if (Cache.contains(CacheGroup.PM, id)) {
+            temp = (PrivateMessage) Cache.get(CacheGroup.PM, id);
+        }
+        return temp;
     }
 }

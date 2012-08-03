@@ -23,23 +23,40 @@ import com.craftfire.authapi.AuthAPI;
 import com.craftfire.authapi.ScriptAPI.Scripts;
 import com.craftfire.authapi.exceptions.UnsupportedFunction;
 import com.craftfire.commons.CraftCommons;
+import com.craftfire.commons.managers.CacheManager;
+import com.craftfire.commons.managers.DataManager;
+import com.craftfire.commons.managers.LoggingManager;
 
 import java.sql.SQLException;
 import java.util.List;
 
 public class Script implements ScriptInterface {
-    private final AuthAPI authAPI;
 	private final String version;
 	private final Scripts script;
 
-    protected Script(AuthAPI authAPI, Scripts script, String version) {
-        this.authAPI = authAPI;
+    protected Script(Scripts script, String version) {
 		this.version = version;
 		this.script = script;
 	}
     
     public AuthAPI getAuthAPI() {
-        return this.authAPI;
+        return AuthAPI.getInstance();
+    }
+    
+    public LoggingManager getLoggingManager() {
+        return AuthAPI.getInstance().getLoggingManager();
+    }
+
+    public CacheManager getCacheManager() {
+        return AuthAPI.getInstance().getCacheManager();
+    }
+
+    public Cache getCache() {
+        return AuthAPI.getInstance().getCache();
+    }
+    
+    public DataManager getDataManager() {
+        return AuthAPI.getInstance().getDataManager();
     }
     
     public Scripts getScript() {
@@ -136,7 +153,12 @@ public class Script implements ScriptInterface {
 		throw new UnsupportedFunction();
 	}
 
-	@Override
+    @Override
+    public int getGroupID(String group) throws UnsupportedFunction {
+        throw new UnsupportedFunction();
+    }
+
+    @Override
 	public Group getGroup(int groupid) throws UnsupportedFunction {
 		throw new UnsupportedFunction();
 	}

@@ -43,7 +43,6 @@ import com.craftfire.commons.CraftCommons;
 import com.craftfire.commons.database.DataList;
 import com.craftfire.commons.database.Results;
 import com.craftfire.commons.enums.Encryption;
-import com.craftfire.commons.managers.DataManager;
 
 public class WordPress extends Script {
     private final String scriptName = "wordpress";
@@ -54,13 +53,11 @@ public class WordPress extends Script {
     private final String[] versionRanges = {"3.4.0", "3.4.1"};
     
     private final String userVersion;
-    private final DataManager dataManager;
     private String currentUsername = null;
 
-    public WordPress(AuthAPI authAPI, ScriptAPI.Scripts script, String version) {
-        super(authAPI, script, version);
+    public WordPress(ScriptAPI.Scripts script, String version) {
+        super(script, version);
         this.userVersion = version;
-        this.dataManager = authAPI.getDataManager();
     }
 
     @Override
@@ -96,7 +93,7 @@ public class WordPress extends Script {
 
     @Override
     public boolean authenticate(String username, String password) {
-        String hash = this.dataManager.getStringField("users", "user_pass",
+        String hash = AuthAPI.getInstance().getDataManager().getStringField("users", "user_pass",
                 "`user_login` = '" + username + "'");
         if (hash == null) {
             return false;
@@ -116,19 +113,19 @@ public class WordPress extends Script {
 
     @Override
     public String getUsername(int userid) {
-        return this.dataManager.getStringField("users", "user_login",
+        return AuthAPI.getInstance().getDataManager().getStringField("users", "user_login",
                                                "`ID` = '" + userid + "'");
     }
 
     @Override
     public int getUserID(String username) {
-        return this.dataManager.getIntegerField("users", "ID",
+        return AuthAPI.getInstance().getDataManager().getIntegerField("users", "ID",
                 "`user_login` = '" + username + "'");
     }
 
     @Override
     public ScriptUser getLastRegUser() {
-        return getUser(this.dataManager.getLastID("ID", "users"));
+        return getUser(AuthAPI.getInstance().getDataManager().getLastID("ID", "users"));
     }
 
     @Override
@@ -139,13 +136,13 @@ public class WordPress extends Script {
     @Override
     public ScriptUser getUser(int userid) {
         if (isRegistered(getUsername(userid))) {
-            ScriptUser user = new ScriptUser(this, userid, null, null);
-            HashMap<String, Object> array = this.dataManager.getArray(
-                    "SELECT * FROM `" + this.dataManager.getPrefix()
+            ScriptUser user = new ScriptUser(userid, null, null);
+            HashMap<String, Object> array = AuthAPI.getInstance().getDataManager().getArray(
+                    "SELECT * FROM `" + AuthAPI.getInstance().getDataManager().getPrefix()
                     + "users` WHERE `ID` = '" + userid + "' LIMIT 1");
             if (array.size() > 0) {
                 String lastlogin;
-                String activation = this.dataManager.getStringField("usermeta",
+                String activation = AuthAPI.getInstance().getDataManager().getStringField("usermeta",
                         "meta_value", "`user_id` = '" + userid
                         + "' AND `meta_key1 = 'uae_user_activation_code'");
                 if (activation != null && activation.equalsIgnoreCase("active")) {
@@ -165,20 +162,20 @@ public class WordPress extends Script {
                 user.setAvatarURL("http://www.gravatar.com/avatar/"
                         + CraftCommons.encrypt(Encryption.MD5,
                         array.get("user_email").toString().toLowerCase()));
-                user.setFirstName(this.dataManager.getStringField("usermeta",
+                user.setFirstName(AuthAPI.getInstance().getDataManager().getStringField("usermeta",
                         "meta_value", "`user_id` = '" + user.getID()
                         + "' AND `meta_key` = 'first_name'"));
-                user.setLastName(this.dataManager.getStringField("usermeta",
+                user.setLastName(AuthAPI.getInstance().getDataManager().getStringField("usermeta",
                         "meta_value", "`user_id` = '" + user.getID()
                         + "' AND `meta_key` = 'last_name'"));
-                user.setNickname(this.dataManager.getStringField("usermeta",
+                user.setNickname(AuthAPI.getInstance().getDataManager().getStringField("usermeta",
                         "meta_value", "`user_id` = '" + user.getID()
                         + "' AND `meta_key` = 'nickname'"));
-                lastlogin = this.dataManager.getStringField("usermeta",
+                lastlogin = AuthAPI.getInstance().getDataManager().getStringField("usermeta",
                         "meta_value", "`user_id` = '" + user.getID()
                         + "' AND `meta_key` = 'last_user_login'");
                 if (!CraftCommons.isLong(lastlogin)) {
-                    lastlogin = this.dataManager.getStringField("usermeta",
+                    lastlogin = AuthAPI.getInstance().getDataManager().getStringField("usermeta",
                             "meta_value", "`user_id` = '" + user.getID()
                             + "' AND `meta_key` = 'wp-last-login'");
                 }
@@ -204,27 +201,27 @@ public class WordPress extends Script {
             user.setPassword(hashPassword(null, user.getPassword()));
             data.put("user_pass", user.getPassword());
         }
-        this.dataManager.updateFields(data, "users",
+        AuthAPI.getInstance().getDataManager().updateFields(data, "users",
                                       "`ID` = '" + user.getID() + "'");
         data.clear();
         
         data.put("meta_value", user.getNickname());
-        this.dataManager.updateFields(data, "usermeta", "`user_id` = '"
+        AuthAPI.getInstance().getDataManager().updateFields(data, "usermeta", "`user_id` = '"
                     + user.getID() + "' AND `meta_key` = 'nickname'");
         data.put("meta_value", user.getFirstName());
-        this.dataManager.updateFields(data, "usermeta", "`user_id` = '"
+        AuthAPI.getInstance().getDataManager().updateFields(data, "usermeta", "`user_id` = '"
                     + user.getID() + "' AND `meta_key` = 'first_name'");
         data.put("meta_value", user.getLastName());
-        this.dataManager.updateFields(data, "usermeta", "`user_id` = '"
+        AuthAPI.getInstance().getDataManager().updateFields(data, "usermeta", "`user_id` = '"
                     + user.getID() + "' AND `meta_key` = 'last_name'");
         data.put("meta_value", String.valueOf(user.getLastLogin().getTime()));
-        this.dataManager.updateFields(data, "usermeta", "`user_id` = '"
+        AuthAPI.getInstance().getDataManager().updateFields(data, "usermeta", "`user_id` = '"
                     + user.getID() + "' AND `meta_key` = 'last_user_login'");
-        this.dataManager.updateFields(data, "usermeta", "`user_id` = '"
+        AuthAPI.getInstance().getDataManager().updateFields(data, "usermeta", "`user_id` = '"
                     + user.getID() + "' AND `meta_key` = 'wp-last-login'");
         data.clear();
         try {
-            setUserGroups(user.getUsername(), user.getUserGroups());
+            setUserGroups(user.getUsername(), user.getGroups());
         } catch (UnsupportedFunction e) {
             e.printStackTrace();
         }
@@ -246,50 +243,50 @@ public class WordPress extends Script {
         data.put("user_registered", user.getRegDate());
         data.put("user_status", 0);
         data.put("display_name", user.getUsername());
-        this.dataManager.insertFields(data, "users");
+        AuthAPI.getInstance().getDataManager().insertFields(data, "users");
         data.clear();
-        user.setID(this.dataManager.getLastID("ID", "users"));
+        user.setID(AuthAPI.getInstance().getDataManager().getLastID("ID", "users"));
         data.put("user_id", user.getID());
         data.put("meta_key", "nickname");
         data.put("meta_value", user.getNickname());
-        this.dataManager.insertFields(data, "usermeta");
+        AuthAPI.getInstance().getDataManager().insertFields(data, "usermeta");
         data.put("meta_key", "first_name");
         data.put("meta_value", user.getFirstName());
-        this.dataManager.insertFields(data, "usermeta");
+        AuthAPI.getInstance().getDataManager().insertFields(data, "usermeta");
         data.put("meta_key", "last_name");
         data.put("meta_value", user.getLastName());
-        this.dataManager.insertFields(data, "usermeta");
+        AuthAPI.getInstance().getDataManager().insertFields(data, "usermeta");
         data.put("meta_key", "rich_editing");
         data.put("meta_value", true);
-        this.dataManager.insertFields(data, "usermeta");
+        AuthAPI.getInstance().getDataManager().insertFields(data, "usermeta");
         data.put("meta_key", "comment_shortcuts");
         data.put("meta_value", false);
-        this.dataManager.insertFields(data, "usermeta");
+        AuthAPI.getInstance().getDataManager().insertFields(data, "usermeta");
         data.put("meta_key", "admin_color");
         data.put("meta_value", "fresh");
-        this.dataManager.insertFields(data, "usermeta");
+        AuthAPI.getInstance().getDataManager().insertFields(data, "usermeta");
         data.put("meta_key", "show_admin_bar_front");
         data.put("meta_value", true);
-        this.dataManager.insertFields(data, "usermeta");
+        AuthAPI.getInstance().getDataManager().insertFields(data, "usermeta");
         data.put("meta_key", "use_ssl");
         data.put("meta_value", 0);
-        this.dataManager.insertFields(data, "usermeta");
+        AuthAPI.getInstance().getDataManager().insertFields(data, "usermeta");
         data.put("meta_key", "default_password_nag");
         data.put("meta_value", 1);
-        this.dataManager.insertFields(data, "usermeta");
+        AuthAPI.getInstance().getDataManager().insertFields(data, "usermeta");
         data.put("meta_key", "wp_user_level");
         data.put("meta_value", 0);
-        this.dataManager.insertFields(data, "usermeta");
+        AuthAPI.getInstance().getDataManager().insertFields(data, "usermeta");
         data.put("meta_key", "wp_capabilities");
         
         try {
-            setUserGroups(user.getUsername(), user.getUserGroups());
+            setUserGroups(user.getUsername(), user.getGroups());
         } catch (UnsupportedFunction e) {
             e.printStackTrace();
         }
         // data.put("meta_value", "a:1:{s:10:\"subscriber\";s:1:\"1\";}");
         
-        this.dataManager.insertFields(data, "usermeta");
+        AuthAPI.getInstance().getDataManager().insertFields(data, "usermeta");
     }
 
     @Override
@@ -333,14 +330,14 @@ public class WordPress extends Script {
                 break;
         default: return null;
         }
-        group = new Group(this, groupid, groupname);
+        group = new Group(groupid, groupname);
         if (namesOnly) {
             return group;
         }
         List<ScriptUser> userlist = new ArrayList<ScriptUser>();
         if (groupid == 6) {
-            if (this.dataManager.exist("sitemeta", "meta_key", "site_admins")) {
-                String admins = this.dataManager.getStringField("sitemeta",
+            if (AuthAPI.getInstance().getDataManager().exist("sitemeta", "meta_key", "site_admins")) {
+                String admins = AuthAPI.getInstance().getDataManager().getStringField("sitemeta",
                         "meta_value", "`meta_key` = 'site_admins'");
                 Map<Object, String> adminmap = (Map<Object, String>) CraftCommons
                         .getUtil().phpUnserialize(admins);
@@ -352,9 +349,9 @@ public class WordPress extends Script {
                 return null;
             }
         } else {
-            Results results = this.dataManager
+            Results results = AuthAPI.getInstance().getDataManager()
                     .getResults("SELECT `meta_value`, `user_id` FROM `"
-                            + this.dataManager.getPrefix()
+                            + AuthAPI.getInstance().getDataManager().getPrefix()
                             + "usermeta` WHERE `meta_key` = 'wp_capabilities'");
             List<DataList> records = results.getArray();
             Iterator<DataList> I = records.iterator();
@@ -389,7 +386,7 @@ public class WordPress extends Script {
     @Override
     public List<Group> getUserGroups(String username) {
     	int userid = this.getUserID(username);
-        String capabilities = this.dataManager.getStringField("usermeta",
+        String capabilities = AuthAPI.getInstance().getDataManager().getStringField("usermeta",
                 "meta_value",
                 "`meta_key` = 'wp_capabilities' AND `user_id` = '" + userid
                         + "'");
@@ -401,9 +398,9 @@ public class WordPress extends Script {
         while (I.hasNext()) {
             Group g = I.next();
             if (g.getID() == 6) {
-                if (this.dataManager.exist("sitemeta", "meta_key",
+                if (AuthAPI.getInstance().getDataManager().exist("sitemeta", "meta_key",
                         "site_admins")) {
-                    String admins = this.dataManager.getStringField("sitemeta",
+                    String admins = AuthAPI.getInstance().getDataManager().getStringField("sitemeta",
                             "meta_value", "`meta_key` = 'site_admins'");
                     Map<Object, Object> adminmap = (Map<Object, Object>) CraftCommons
                             .getUtil().phpUnserialize(admins);
@@ -426,8 +423,8 @@ public class WordPress extends Script {
         int userid = this.getUserID(username);
         Map<String, String> capmap = new HashMap<String, String>();
         List<String> adminlist = null;
-        if (this.dataManager.exist("sitemeta", "meta_key", "site_admins")) {
-            String admins = this.dataManager.getStringField("sitemeta",
+        if (AuthAPI.getInstance().getDataManager().exist("sitemeta", "meta_key", "site_admins")) {
+            String admins = AuthAPI.getInstance().getDataManager().getStringField("sitemeta",
                     "meta_value", "`meta_key` = 'site_admins'");
             Map<Object, String> adminmap = (Map<Object, String>) CraftCommons
                     .getUtil().phpUnserialize(admins);
@@ -453,13 +450,13 @@ public class WordPress extends Script {
         String capabilities = CraftCommons.getUtil().phpSerialize(capmap);
         HashMap<String, Object> data = new HashMap<String, Object>();
         data.put("meta_value", capabilities);
-        this.dataManager.updateFields(data, "usermeta",
+        AuthAPI.getInstance().getDataManager().updateFields(data, "usermeta",
                 "`meta_key` = 'wp_capabilities' AND `user_id` = '" + userid
                         + "'");
         if (adminlist != null) {
             String admins = CraftCommons.getUtil().phpSerialize(adminlist);
             data.put("meta_value", admins);
-            this.dataManager.updateFields(data, "sitemeta",
+            AuthAPI.getInstance().getDataManager().updateFields(data, "sitemeta",
                     "`meta_key` = 'site_admins'");
         }
     }
@@ -473,7 +470,7 @@ public class WordPress extends Script {
                     "The script doesn't support changing group names or IDs.");
         }
         if (group.getID() == 6) {
-            if (this.dataManager.exist("sitemeta", "meta_key", "site_admins")) {
+            if (AuthAPI.getInstance().getDataManager().exist("sitemeta", "meta_key", "site_admins")) {
                 List<String> adminlist = new ArrayList<String>();
                 Iterator<ScriptUser> I = group.getUsers().iterator();
                 while (I.hasNext()) {
@@ -482,7 +479,7 @@ public class WordPress extends Script {
                 String admins = CraftCommons.getUtil().phpSerialize(adminlist);
                 HashMap<String, Object> data = new HashMap<String, Object>();
                 data.put("meta_value", admins);
-                this.dataManager.updateFields(data, "sitemeta",
+                AuthAPI.getInstance().getDataManager().updateFields(data, "sitemeta",
                         "`meta_key` = 'site_admins'");
             }
         } else {
@@ -581,23 +578,23 @@ public class WordPress extends Script {
 
     @Override
     public int getPostCount(String username) {
-        return this.dataManager.getCount("comments",
+        return AuthAPI.getInstance().getDataManager().getCount("comments",
                 "`comment_author` = '" + username + "'");
     }
 
     @Override
     public int getTotalPostCount() {
-        return this.dataManager.getCount("comments");
+        return AuthAPI.getInstance().getDataManager().getCount("comments");
     }
 
     @Override
     public Post getLastPost() {
-        return getPost(this.dataManager.getLastID("comment_ID", "comments"));
+        return getPost(AuthAPI.getInstance().getDataManager().getLastID("comment_ID", "comments"));
     }
 
     @Override
     public Post getLastUserPost(String username) {
-        return getPost(this.dataManager.getLastID("comment_ID", "comments",
+        return getPost(AuthAPI.getInstance().getDataManager().getLastID("comment_ID", "comments",
                 "`comment_author` = '" + username + "'"));
     }
 
@@ -609,8 +606,8 @@ public class WordPress extends Script {
         if (limit > 0) {
             limitstring = " LIMIT 0," + limit;
         }
-        array = this.dataManager.getArrayList(
-                "SELECT `comment_ID` FROM `" + this.dataManager.getPrefix()
+        array = AuthAPI.getInstance().getDataManager().getArrayList(
+                "SELECT `comment_ID` FROM `" + AuthAPI.getInstance().getDataManager().getPrefix()
                 + "comments` ORDER BY `post_id` ASC" + limitstring);
         posts = new ArrayList<Post>();
         for (HashMap<String, Object> record : array) {
@@ -628,8 +625,8 @@ public class WordPress extends Script {
         if (limit > 0) {
             limitstring = " LIMIT 0," + limit;
         }
-        array = this.dataManager.getArrayList(
-                "SELECT `comment_ID` FROM `" + this.dataManager.getPrefix()
+        array = AuthAPI.getInstance().getDataManager().getArrayList(
+                "SELECT `comment_ID` FROM `" + AuthAPI.getInstance().getDataManager().getPrefix()
                 + "comments` WHERE `comment_post_ID` = " + threadid
                 + "' ORDER BY `post_id` ASC" + limitstring);
         posts = new ArrayList<Post>();
@@ -642,13 +639,13 @@ public class WordPress extends Script {
 
     @Override
     public Post getPost(int postid) {
-        HashMap<String, Object> array = this.dataManager.getArray(
-                "SELECT * FROM `" + this.dataManager.getPrefix()
+        HashMap<String, Object> array = AuthAPI.getInstance().getDataManager().getArray(
+                "SELECT * FROM `" + AuthAPI.getInstance().getDataManager().getPrefix()
                 + "comments` WHERE `comment_ID` = '" + postid);
-        int board = this.dataManager.getStringField("posts", "post_type",
+        int board = AuthAPI.getInstance().getDataManager().getStringField("posts", "post_type",
                 "`ID` = '" + array.get("comment_post_ID") + "'")
                 .equalsIgnoreCase("post") ? 0 : 1;
-        Post post = new Post(this,
+        Post post = new Post(
                 Integer.parseInt(array.get("comment_ID").toString()),
                 Integer.parseInt(array.get("comment_post_ID").toString()),
                 board);
@@ -674,7 +671,7 @@ public class WordPress extends Script {
         data.put("comment_date", new Date(new java.util.Date().getTime()));
         data.put("comment_date_gtm", null /*TODO*/);
         data.put("comment_content", post.getBody());
-        this.dataManager.updateFields(data, "comments",
+        AuthAPI.getInstance().getDataManager().updateFields(data, "comments",
                 "`comment_ID` = '" + post.getID() + "'");
     }
 
@@ -693,40 +690,40 @@ public class WordPress extends Script {
         data.put("comment_date", new Date(new java.util.Date().getTime()));
         data.put("comment_date_gmt", null /*TODO*/);
         data.put("comment_content", post.getBody());
-        this.dataManager.insertFields(data, "comments");
-        post.setID(this.dataManager.getLastID("comment_ID", "comments"));
+        AuthAPI.getInstance().getDataManager().insertFields(data, "comments");
+        post.setID(AuthAPI.getInstance().getDataManager().getLastID("comment_ID", "comments"));
     }
 
     @Override
     public int getThreadCount(String username) {
-        return this.dataManager.getCount("posts",
+        return AuthAPI.getInstance().getDataManager().getCount("posts",
                 "`post_author` = '" + getUserID(username) + "'");
     }
 
     @Override
     public int getTotalThreadCount() {
-        return this.dataManager.getCount("posts");
+        return AuthAPI.getInstance().getDataManager().getCount("posts");
     }
 
     @Override
     public com.craftfire.authapi.classes.Thread getLastThread() {
-        return getThread(this.dataManager.getLastID("post_id", "posts"));
+        return getThread(AuthAPI.getInstance().getDataManager().getLastID("post_id", "posts"));
     }
 
     @Override
     public Thread getLastUserThread(String username) {
-        return getThread(this.dataManager.getLastID("post_id", "posts",
+        return getThread(AuthAPI.getInstance().getDataManager().getLastID("post_id", "posts",
                         "`post_author` = '" + getUserID(username) + "'"));
     }
 
     @Override
     public Thread getThread(int threadid) {
         Thread thread;
-        HashMap<String, Object> array = this.dataManager.getArray(
-                 "SELECT * FROM `" + this.dataManager.getPrefix()
+        HashMap<String, Object> array = AuthAPI.getInstance().getDataManager().getArray(
+                 "SELECT * FROM `" + AuthAPI.getInstance().getDataManager().getPrefix()
                  + "posts` WHERE `ID` = '" + threadid + "'");
-        List<HashMap<String, Object>> array1 = this.dataManager.getArrayList(
-                "SELECT `comment_ID` FROM `" + this.dataManager.getPrefix()
+        List<HashMap<String, Object>> array1 = AuthAPI.getInstance().getDataManager().getArrayList(
+                "SELECT `comment_ID` FROM `" + AuthAPI.getInstance().getDataManager().getPrefix()
                 + "comments` WHERE `comment_post_ID` = " + threadid
                 + "' ORDER BY `post_id` ASC");
         int firstpost = Integer.parseInt(
@@ -739,7 +736,7 @@ public class WordPress extends Script {
             !array.get("post_type").toString().equalsIgnoreCase("page")) {
             return null;
         }
-        thread = new Thread(this, firstpost, lastpost, threadid, boardid);
+        thread = new Thread(firstpost, lastpost, threadid, boardid);
         thread.setAuthor(getUser(Integer.parseInt(
                 array.get("post_author").toString())));
         thread.setBody(array.get("post_content").toString());
@@ -766,8 +763,8 @@ public class WordPress extends Script {
         if (limit > 0) {
             limitstring = " LIMIT 0," + limit;
         }
-        array = this.dataManager.getArrayList(
-                "SELECT `ID` FROM `" + this.dataManager.getPrefix() + "posts`"
+        array = AuthAPI.getInstance().getDataManager().getArrayList(
+                "SELECT `ID` FROM `" + AuthAPI.getInstance().getDataManager().getPrefix() + "posts`"
                 + limitstring);
         threads = new ArrayList<Thread>();
         for (HashMap<String,Object> record : array) {
@@ -793,7 +790,7 @@ public class WordPress extends Script {
         data.put("guid", getHomeURL() + "/?p=" + thread.getID());
         data.put("comment_count", thread.getReplies());
         data.put("comment_status", thread.isLocked() ? "closed" : "open");
-        this.dataManager.updateFields(data, "posts",
+        AuthAPI.getInstance().getDataManager().updateFields(data, "posts",
                 "`ID` = '" + thread.getID() + "'");
         //TODO update sticky, waiting for php (un)serialize
     }
@@ -813,11 +810,11 @@ public class WordPress extends Script {
         data.put("post_type", thread.getBoardID() == 0 ? "post" : "page");
         data.put("comment_count", thread.getReplies());
         data.put("post_type", thread.getBoardID() == 0 ? "post" : "page");
-        this.dataManager.insertFields(data, "posts");
-        thread.setID(this.dataManager.getLastID("ID", "posts"));
+        AuthAPI.getInstance().getDataManager().insertFields(data, "posts");
+        thread.setID(AuthAPI.getInstance().getDataManager().getLastID("ID", "posts"));
         data.clear();
         data.put("guid", getHomeURL() + "/?p=" + thread.getID());
-        this.dataManager.updateFields(data, "posts",
+        AuthAPI.getInstance().getDataManager().updateFields(data, "posts",
                 "`ID` = '" + thread.getID() +  "'");
         
         //TODO: update sticky, waiting for php (un)serialize
@@ -825,7 +822,7 @@ public class WordPress extends Script {
 
     @Override
     public int getUserCount() {
-        return this.dataManager.getCount("users");
+        return AuthAPI.getInstance().getDataManager().getCount("users");
     }
 
     @Override
@@ -834,7 +831,7 @@ public class WordPress extends Script {
          * 6 WordPress roles: Subscriber, Contributor, Author, Editor,
          *                    Administrator, Super Admin
          */
-        if (this.dataManager.exist("sitemeta", "meta_key", "site_admins")) {
+        if (AuthAPI.getInstance().getDataManager().exist("sitemeta", "meta_key", "site_admins")) {
             // Super Admin doesn't always exist.
             return 6;
         } else {
@@ -844,7 +841,7 @@ public class WordPress extends Script {
 
     @Override
     public String getHomeURL() {
-        return this.dataManager.getStringField("options", "option_value",
+        return AuthAPI.getInstance().getDataManager().getStringField("options", "option_value",
                 "`option_name` = 'siteurl'");
     }
 
@@ -890,6 +887,6 @@ public class WordPress extends Script {
 
     @Override
     public boolean isRegistered(String username) {
-        return this.dataManager.exist("users", "user_login", username);
+        return AuthAPI.getInstance().getDataManager().exist("users", "user_login", username);
     }
 }

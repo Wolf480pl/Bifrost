@@ -19,33 +19,33 @@
  */
 package com.craftfire.authapi.classes;
 
+import com.craftfire.authapi.AuthAPI;
+import com.craftfire.authapi.enums.CacheGroup;
 import com.craftfire.authapi.exceptions.UnsupportedFunction;
 import com.craftfire.commons.CraftCommons;
 
 import java.awt.Image;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 public class ScriptUser implements ScriptUserInterface {
-    private final Script script;
     private int userid;
     private Date regdate, lastlogin, birthday;
     private Gender gender;
     private String username, title, nickname, realname, firstname, lastname, email, password, passwordsalt,
             statusmessage, avatarurl, profileurl, regip, lastip;
     private boolean activated;
-    private List<Group> groups;
+    private List<Group> groups = new ArrayList<Group>();
 
-    public ScriptUser(Script script, int userid, String username, String password) {
-        this.script = script;
+    public ScriptUser(int userid, String username, String password) {
         this.username = username;
         this.userid = userid;
         this.password = password;
     }
 
-    public ScriptUser(Script script, String username, String password) {
-        this.script = script;
+    public ScriptUser(String username, String password) {
         this.username = username;
         this.password = password;
     }
@@ -141,13 +141,17 @@ public class ScriptUser implements ScriptUserInterface {
     }
 
     @Override
-    public List<Group> getUserGroups() throws UnsupportedFunction {
+    @SuppressWarnings("unchecked")
+    //TODO
+    public List<Group> getGroups() throws UnsupportedFunction {
         List<Group> temp;
-        if (this.script.getAuthAPI().getCacheManager().contains("userGroups", getID())) {
-            temp = (List<Group>) this.script.getAuthAPI().getCacheManager().get("userGroups", getID());
+        if (this.groups.size() > 0) {
+            return this.groups;
+        } else if (Cache.contains(CacheGroup.USER_GROUP, getID())) {
+            temp = (List<Group>) Cache.get(CacheGroup.USER_GROUP, getID());
         } else {
-            temp = this.script.getUserGroups(this.username);
-            this.script.getAuthAPI().getCacheManager().put("userGroups", userid, temp);
+            temp = AuthAPI.getInstance().getScriptAPI().getUserGroups(this.username);
+            Cache.put(CacheGroup.USER_GROUP, userid, temp);
         }
         return temp;
     }
@@ -274,43 +278,43 @@ public class ScriptUser implements ScriptUserInterface {
 
     @Override
     public List<PrivateMessage> getPMsSent(int limit) throws UnsupportedFunction {
-        return this.script.getPMsSent(this.username, limit);
+        return AuthAPI.getInstance().getScriptAPI().getPMsSent(this.username, limit);
     }
 
     @Override
     public List<PrivateMessage> getPMsReceived(int limit) throws UnsupportedFunction {
-        return this.script.getPMsReceived(this.username, limit);
+        return AuthAPI.getInstance().getScriptAPI().getPMsReceived(this.username, limit);
     }
 
     @Override
     public int getPMSentCount() throws UnsupportedFunction {
-        return this.script.getPMSentCount(this.username);
+        return AuthAPI.getInstance().getScriptAPI().getPMSentCount(this.username);
     }
 
     @Override
     public int getPMReceivedCount() throws UnsupportedFunction {
-        return this.script.getPMReceivedCount(this.username);
+        return AuthAPI.getInstance().getScriptAPI().getPMReceivedCount(this.username);
     }
 
     @Override
     public int getPostCount() throws UnsupportedFunction {
-        return this.script.getPostCount(this.username);
+        return AuthAPI.getInstance().getScriptAPI().getPostCount(this.username);
     }
 
     @Override
     public int getThreadCount() throws UnsupportedFunction {
-        return this.script.getThreadCount(this.username);
+        return AuthAPI.getInstance().getScriptAPI().getThreadCount(this.username);
     }
 
     @Override
     public boolean isBanned() throws UnsupportedFunction {
-        if (this.script.isBanned(this.username)) {
+        if (AuthAPI.getInstance().getScriptAPI().isBanned(this.username)) {
             return true;
-        } else if (this.script.isBanned(this.email)) {
+        } else if (AuthAPI.getInstance().getScriptAPI().isBanned(this.email)) {
             return true;
-        } else if (this.script.isBanned(this.lastip)) {
+        } else if (AuthAPI.getInstance().getScriptAPI().isBanned(this.lastip)) {
             return true;
-        } else if (this.script.isBanned(this.regip)) {
+        } else if (AuthAPI.getInstance().getScriptAPI().isBanned(this.regip)) {
             return true;
         } else {
             return false;
@@ -319,31 +323,48 @@ public class ScriptUser implements ScriptUserInterface {
 
     @Override
     public boolean isRegistered() throws UnsupportedFunction {
-        return this.script.isRegistered(this.username);
+        return AuthAPI.getInstance().getScriptAPI().isRegistered(this.username);
     }
 
     @Override
     public List<String> getIPs() throws UnsupportedFunction {
-        return this.script.getIPs(this.username);
+        return AuthAPI.getInstance().getScriptAPI().getIPs(this.username);
     }
 
     @Override
     public Thread getLastThread() throws UnsupportedFunction {
-        return this.script.getLastUserThread(this.username);
+        return AuthAPI.getInstance().getScriptAPI().getLastUserThread(this.username);
     }
 
     @Override
     public Post getLastPost() throws UnsupportedFunction {
-        return this.script.getLastUserPost(this.username);
+        return AuthAPI.getInstance().getScriptAPI().getLastUserPost(this.username);
     }
 
     @Override
     public void updateUser() throws SQLException, UnsupportedFunction {
-        this.script.updateUser(this);
+        AuthAPI.getInstance().getScriptAPI().updateUser(this);
     }
 
     @Override
     public void createUser() throws SQLException, UnsupportedFunction {
-        this.script.createUser(this);
+        AuthAPI.getInstance().getScriptAPI().createUser(this);
+    }
+
+    public static boolean hasCache(Object id) {
+        return Cache.contains(CacheGroup.USER, id);
+    }
+
+    public static void addCache(ScriptUser scriptUser) {
+        Cache.put(CacheGroup.USER, scriptUser.getID(), scriptUser);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static ScriptUser getCache(Object id) {
+        ScriptUser temp = null;
+        if (Cache.contains(CacheGroup.USER, id)) {
+            temp = (ScriptUser) Cache.get(CacheGroup.USER, id);
+        }
+        return temp;
     }
 }

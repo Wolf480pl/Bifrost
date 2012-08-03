@@ -19,11 +19,9 @@
  */
 package com.craftfire.authapi.scripts.cms;
 
-import com.craftfire.authapi.AuthAPI;
 import com.craftfire.authapi.ScriptAPI;
 import com.craftfire.authapi.classes.*;
 import com.craftfire.authapi.classes.Thread;
-import com.craftfire.commons.managers.DataManager;
 
 import java.util.List;
 
@@ -33,13 +31,11 @@ public class Drupal extends Script {
     private final String encryption = "sha1"; /*TODO*/
     private final String[] versionRanges = {"1.0.4"}; /*TODO*/
     private final String userVersion;
-    private final DataManager dataManager;
     private String currentUsername = null;
 
-    public Drupal(AuthAPI authAPI, ScriptAPI.Scripts script, String version) {
-        super(authAPI, script, version);
+    public Drupal(ScriptAPI.Scripts script, String version) {
+        super(script, version);
         this.userVersion = version;
-        this.dataManager = authAPI.getDataManager();
     }
 
     public String[] getVersionRanges() {
@@ -113,6 +109,11 @@ public class Drupal extends Script {
     public List<Group> getGroups(int limit) {
         /*TODO*/
         return null;
+    }
+
+    public int getGroupID(String group) {
+        /*TODO*/
+        return 0;
     }
 
     public Group getGroup(int groupid) {

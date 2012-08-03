@@ -19,27 +19,26 @@
  */
 package com.craftfire.authapi.classes;
 
+import com.craftfire.authapi.AuthAPI;
+import com.craftfire.authapi.enums.CacheGroup;
+import com.craftfire.authapi.exceptions.UnsupportedFunction;
+
 import java.sql.SQLException;
 import java.util.Date;
 
-import com.craftfire.authapi.exceptions.UnsupportedFunction;
-
 public class Ban implements BanInterface {
-    private final Script script;
     private String name, email, ip, reason, notes;
     private int banid, userid;
     private Date startdate, enddate;
 
-    public Ban(Script script, int banid, String name, String email, String ip) {
-        this.script = script;
+    public Ban(int banid, String name, String email, String ip) {
         this.banid = banid;
         this.name = name;
         this.email = email;
         this.ip = ip;
     }
 
-    public Ban(Script script, String name, String email, String ip) {
-        this.script = script;
+    public Ban(String name, String email, String ip) {
         this.name = name;
         this.email = email;
         this.ip = ip;
@@ -156,11 +155,28 @@ public class Ban implements BanInterface {
 
     @Override
     public void updateBan() throws SQLException, UnsupportedFunction {
-        this.script.updateBan(this);
+        AuthAPI.getInstance().getScriptAPI().updateBan(this);
     }
 
     @Override
     public void addBan() throws SQLException, UnsupportedFunction {
-        this.script.addBan(this);
+        AuthAPI.getInstance().getScriptAPI().addBan(this);
+    }
+
+    public static boolean hasCache(Object id) {
+        return Cache.contains(CacheGroup.BAN, id);
+    }
+
+    public static void addCache(Ban ban) {
+        Cache.put(CacheGroup.BAN, ban.getID(), ban);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static Ban getCache(Object id) {
+        Ban temp = null;
+        if (Cache.contains(CacheGroup.BAN, id)) {
+            temp = (Ban) Cache.get(CacheGroup.BAN, id);
+        }
+        return temp;
     }
 }
