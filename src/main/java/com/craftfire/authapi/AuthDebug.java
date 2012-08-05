@@ -19,13 +19,6 @@
  */
 package com.craftfire.authapi;
 
-import com.craftfire.authapi.classes.*;
-import com.craftfire.authapi.classes.Thread;
-import com.craftfire.authapi.exceptions.UnsupportedFunction;
-import com.craftfire.authapi.exceptions.UnsupportedVersion;
-import com.craftfire.commons.enums.DataType;
-import com.craftfire.commons.managers.DataManager;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -34,6 +27,18 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
+
+import com.craftfire.authapi.classes.Ban;
+import com.craftfire.authapi.classes.Group;
+import com.craftfire.authapi.classes.Post;
+import com.craftfire.authapi.classes.PrivateMessage;
+import com.craftfire.authapi.classes.Script;
+import com.craftfire.authapi.classes.ScriptUser;
+import com.craftfire.authapi.classes.Thread;
+import com.craftfire.authapi.exceptions.UnsupportedFunction;
+import com.craftfire.authapi.exceptions.UnsupportedVersion;
+import com.craftfire.commons.enums.DataType;
+import com.craftfire.commons.managers.DataManager;
 
 public class AuthDebug {
     static AuthAPI authAPI;
@@ -91,11 +96,11 @@ public class AuthDebug {
             ask("MySQL timeout", "mysql_timeout", "0");
             ask("MySQL host", "mysql_host", "localhost");
             ask("MySQL port", "mysql_port", "3306");
-            ask("MySQL database", "mysql_database", "craftfire");
-            ask("MySQL username", "mysql_username", "craftfire");
-            ask("MySQL password", "mysql_password", "craftfire");
-            ask("MySQL prefix", "mysql_prefix", "smf__202__");
-            ask("Script user username", "script_username", "Contex");
+            ask("MySQL database", "mysql_database", "wordpress"); //TODO: Default should be "craftfire"
+            ask("MySQL username", "mysql_username", "root"); //TODO: Default should be "craftfire"
+            ask("MySQL password", "mysql_password", "AuthAPI"); //TODO: Default should be "craftfire"
+            ask("MySQL prefix", "mysql_prefix", "wp_"); //TODO: Default should be "smf__202__"
+            ask("Script user username", "script_username", "ttt"); //TODO: Default should be "Contex"
             boolean keepalive = false;
             if (data.get("mysql_keepalive").equalsIgnoreCase("true") ||
                 data.get("mysql_keepalive").equalsIgnoreCase("1")) {
@@ -186,8 +191,16 @@ public class AuthDebug {
 			printResult("getForumURL", tscript.getForumURL());
 			printResult("getHomeURL", tscript.getHomeURL());
 			printResult("getLastThread", "" + tscript.getLastThread());
-			printResult("getBanCount", "" + tscript.getBanCount());
-			printResult("getBans", "" + tscript.getBans(0));
+            try {
+                printResult("getBanCount", "" + tscript.getBanCount());
+            } catch (UnsupportedFunction e) {
+                printResult("getBanCount", "null");
+            }
+            try {
+                printResult("getBans", "" + tscript.getBans(0));
+            } catch (UnsupportedFunction e) {
+                printResult("getBans", "null");
+            }
 			printResult("getGroupCount", "" + tscript.getGroupCount());
 			printResult("getGroups", "" + tscript.getGroups(0));
 			printResult("getLastThread", "" + tscript.getLastThread());
@@ -198,7 +211,11 @@ public class AuthDebug {
 			printResult("getThreads", "" + tscript.getThreads(0));
 			printResult("getPosts", "" + tscript.getPosts(0));
 			printResult("getUserCount", "" + tscript.getUserCount());
-			printResult("isBanned", "" + tscript.isBanned("test"));
+            try {
+                printResult("isBanned", "" + tscript.isBanned("test"));
+            } catch (UnsupportedFunction e) {
+                printResult("isBanned", "null");
+            }
 
 			print(seperate);
 
@@ -209,7 +226,11 @@ public class AuthDebug {
 			printResult("getEmail", user.getEmail());
 			printResult("getFirstName", user.getFirstName());
 			printResult("getGender", "" + user.getGender());
-			printResult("getIPs", "" + user.getIPs());
+            try {
+                printResult("getIPs", "" + user.getIPs());
+            } catch (UnsupportedFunction e) {
+                printResult("getIPs", "null");
+            }
 			printResult("getLastIP", user.getLastIP());
 			printResult("getLastLogin", "" + user.getLastLogin());
 			printResult("getLastPost", "" + user.getLastPost());
@@ -219,10 +240,27 @@ public class AuthDebug {
 			printResult("getProfileURL", user.getProfileURL());
 			printResult("getPassword", user.getPassword());
 			printResult("getPasswordSalt", user.getPasswordSalt());
-			printResult("getPMReceivedCount", "" + user.getPMReceivedCount());
-			printResult("getPMSentCount", "" + user.getPMSentCount());
-			printResult("getPMsSent", "" + user.getPMsSent(0));
-			printResult("getPMsReceived", "" + user.getPMsReceived(0));
+            try {
+                printResult("getPMReceivedCount",
+                        "" + user.getPMReceivedCount());
+            } catch (UnsupportedFunction e) {
+                printResult("getPMReceivedCount", "null");
+            }
+            try {
+                printResult("getPMSentCount", "" + user.getPMSentCount());
+            } catch (UnsupportedFunction e) {
+                printResult("getPMSentCount", "null");
+            }
+            try {
+                printResult("getPMsSent", "" + user.getPMsSent(0));
+            } catch (UnsupportedFunction e) {
+                printResult("getPMsSent", "null");
+            }
+            try {
+                printResult("getPMsReceived", "" + user.getPMsReceived(0));
+            } catch (UnsupportedFunction e) {
+                printResult("getPMsReceived", "null");
+            }
 			printResult("getPostCount", "" + user.getPostCount());
 			printResult("getRealName", user.getRealName());
 			printResult("getRegIP", user.getRegIP());
@@ -234,7 +272,11 @@ public class AuthDebug {
 			printResult("getUserID", "" + user.getID());
 			printResult("getUserGroups", "" + user.getGroups());
 			printResult("isActivated", "" + user.isActivated());
-			printResult("isBanned", "" + user.isBanned());
+            try {
+                printResult("isBanned", "" + user.isBanned());
+            } catch (UnsupportedFunction e) {
+                printResult("isBanned", "null");
+            }
 			printResult("isRegistered", "" + user.isRegistered());
 
 			print(seperate);
@@ -262,8 +304,13 @@ public class AuthDebug {
 
 			print(script.toString() + " - " + version + " - BAN CLASS");
 			Ban ban = null;
-			if (authAPI.getScript().getBans(1) != null) {
-			    ban = authAPI.getScript().getBans(1).get(0);
+            try {
+                if (authAPI.getScript().getBans(1) != null) {
+                    ban = authAPI.getScript().getBans(1).get(0);
+                }
+            } catch (UnsupportedFunction e) {
+            }
+            if (ban != null) {
 			    printResult("getEmail", ban.getEmail());
 	            printResult("getIP", ban.getIP());
 	            printResult("getID", "" + ban.getID());
@@ -299,7 +346,11 @@ public class AuthDebug {
 			Ban newBan = new Ban("craftfire-ban-" + randomInt, "dev@craftfire.com", "127.0.0.1");
 			newBan.setNotes("Staff notes");
 			newBan.setReason("Hello world!");
-			newBan.addBan();
+            try {
+                newBan.addBan();
+            } catch (UnsupportedFunction e) {
+                print("NOT SUPPORTED");
+            }
 
 			print(seperate);
 
@@ -318,11 +369,15 @@ public class AuthDebug {
 
 			print(script.toString() + " - " + version + " - GROUP UPDATING");
 			if (group != null) {
-			    temp = group.getName();
-			    group.setName("Debug");
-	            group.updateGroup();
-	            group.setName(temp);
-	            group.updateGroup();
+                try {
+                    temp = group.getName();
+                    group.setName("Debug");
+                    group.updateGroup();
+                    group.setName(temp);
+                    group.updateGroup();
+                } catch (UnsupportedFunction e) {
+                    print("NOT SUPPORTED");
+                }
 	        }
 			
 			print(seperate);
@@ -330,28 +385,34 @@ public class AuthDebug {
 			print(script.toString() + " - " + version + " - GROUP CREATE");
 			Group newGroup = new Group("craftfire_group_" + randomInt);
 			newGroup.setDescription("Description is not needed!");
-			newGroup.createGroup();
+            try {
+                newGroup.createGroup();
+            } catch (UnsupportedFunction e) {
+                print("NOT SUPPORTED");
+            }
 
 			print(seperate);
 
 			print(script.toString() + " - " + version + " - POST CLASS");
 			Post post = user.getLastPost();
-			printResult("getAuthor", "" + post.getAuthor());
-			printResult("getBody", post.getBody());
-			printResult("getSubject", post.getSubject());
-			printResult("getBoardID", "" + post.getBoardID());
-			printResult("getPostDate", "" + post.getPostDate());
-			printResult("getPostID", "" + post.getID());
-			printResult("getThreadID", "" + post.getThreadID());
+            if (post != null) {
+                printResult("getAuthor", "" + post.getAuthor());
+                printResult("getBody", post.getBody());
+                printResult("getSubject", post.getSubject());
+                printResult("getBoardID", "" + post.getBoardID());
+                printResult("getPostDate", "" + post.getPostDate());
+                printResult("getPostID", "" + post.getID());
+                printResult("getThreadID", "" + post.getThreadID());
 
-			print(seperate);
+                print(seperate);
 
-			print(script.toString() + " - " + version + " - POST UPDATING");
-			temp = post.getSubject();
-			post.setSubject("Debug");
-			post.updatePost();
-			post.setSubject(temp);
-			post.updatePost();
+                print(script.toString() + " - " + version + " - POST UPDATING");
+                temp = post.getSubject();
+                post.setSubject("Debug");
+                post.updatePost();
+                post.setSubject(temp);
+                post.updatePost();
+            }
 
 			print(seperate);
 
@@ -365,23 +426,27 @@ public class AuthDebug {
 			print(seperate);
 
 			print(script.toString() + " - " + version + " - PRIVATEMESSAGE CLASS");
-			PrivateMessage pm = user.getPMsSent(1).get(0);
-			printResult("getBody", pm.getBody());
-			printResult("getSubject", "" + pm.getSubject());
-			printResult("getSubject", pm.getSubject());
-			printResult("getRecipients", "" + pm.getRecipients());
-			printResult("getDate", "" + pm.getDate());
-			printResult("getID", "" + pm.getID());
+            try {
+                PrivateMessage pm = user.getPMsSent(1).get(0);
+                printResult("getBody", pm.getBody());
+                printResult("getSubject", "" + pm.getSubject());
+                printResult("getSubject", pm.getSubject());
+                printResult("getRecipients", "" + pm.getRecipients());
+                printResult("getDate", "" + pm.getDate());
+                printResult("getID", "" + pm.getID());
 
-			print(seperate);
+                print(seperate);
 
-			print(script.toString() + " - " + version + " - PRIVATEMESSAGE UPDATING");
-			temp = pm.getBody();
-			pm.setBody("Debug");
-			pm.updatePrivateMessage();
-			pm.setBody(temp);
-			pm.updatePrivateMessage();
-
+                print(script.toString() + " - " + version
+                        + " - PRIVATEMESSAGE UPDATING");
+                temp = pm.getBody();
+                pm.setBody("Debug");
+                pm.updatePrivateMessage();
+                pm.setBody(temp);
+                pm.updatePrivateMessage();
+            } catch (UnsupportedFunction e) {
+                print("NOT SUPPORTED");
+            }
 			print(seperate);
 
 			print(script.toString() + " - " + version + " - PRIVATEMESSAGE CREATE");
@@ -393,7 +458,11 @@ public class AuthDebug {
 			newPM.setBody("This is an example body: " + randomInt);
 			newPM.setSubject("This is an example subject: " + randomInt);
 			newPM.setNew(authAPI.getScriptAPI().getUser("Craftfire"), true);
-			newPM.createPrivateMessage();
+            try {
+                newPM.createPrivateMessage();
+            } catch (UnsupportedFunction e) {
+                print("NOT SUPPORTED");
+            }
 
 			print(seperate);
 

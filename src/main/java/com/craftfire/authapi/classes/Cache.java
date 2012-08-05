@@ -10,6 +10,9 @@ public class Cache {
     }
 
     public static void put(CacheGroup group, Object id, Object object) {
+        if (object == null) {
+            return;
+        }
         AuthAPI.getInstance().getCacheManager().put(group.toString(), id, object);
     }
 

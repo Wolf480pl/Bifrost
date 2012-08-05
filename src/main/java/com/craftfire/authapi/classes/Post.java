@@ -19,12 +19,12 @@
  */
 package com.craftfire.authapi.classes;
 
+import java.sql.SQLException;
+import java.util.Date;
+
 import com.craftfire.authapi.AuthAPI;
 import com.craftfire.authapi.enums.CacheGroup;
 import com.craftfire.authapi.exceptions.UnsupportedFunction;
-
-import java.sql.SQLException;
-import java.util.Date;
 
 public class Post implements PostInterface {
     private ScriptUser author;
@@ -124,6 +124,9 @@ public class Post implements PostInterface {
     }
 
     public static void addCache(Post post) {
+        if (post == null) {
+            return;
+        }
         Cache.put(CacheGroup.POST, post.getID(), post);
     }
 

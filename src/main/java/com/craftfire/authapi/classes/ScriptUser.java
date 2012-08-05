@@ -151,7 +151,7 @@ public class ScriptUser implements ScriptUserInterface {
             temp = (List<Group>) Cache.get(CacheGroup.USER_GROUP, getID());
         } else {
             temp = AuthAPI.getInstance().getScriptAPI().getUserGroups(this.username);
-            Cache.put(CacheGroup.USER_GROUP, userid, temp);
+            Cache.put(CacheGroup.USER_GROUP, this.userid, temp);
         }
         return temp;
     }
@@ -356,6 +356,9 @@ public class ScriptUser implements ScriptUserInterface {
     }
 
     public static void addCache(ScriptUser scriptUser) {
+        if (scriptUser == null) {
+            return;
+        }
         Cache.put(CacheGroup.USER, scriptUser.getID(), scriptUser);
     }
 

@@ -19,13 +19,13 @@
  */
 package com.craftfire.authapi.classes;
 
-import com.craftfire.authapi.AuthAPI;
-import com.craftfire.authapi.enums.CacheGroup;
-import com.craftfire.authapi.exceptions.UnsupportedFunction;
-
 import java.sql.SQLException;
 import java.util.Date;
 import java.util.List;
+
+import com.craftfire.authapi.AuthAPI;
+import com.craftfire.authapi.enums.CacheGroup;
+import com.craftfire.authapi.exceptions.UnsupportedFunction;
 
 public class Thread implements ThreadInterface {
     private ScriptUser author;
@@ -182,6 +182,9 @@ public class Thread implements ThreadInterface {
     }
 
     public static void addCache(Thread thread) {
+        if (thread == null) {
+            return;
+        }
         Cache.put(CacheGroup.THREAD, thread.getID(), thread);
     }
 

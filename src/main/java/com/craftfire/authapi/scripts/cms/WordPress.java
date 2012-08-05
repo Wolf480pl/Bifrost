@@ -20,9 +20,9 @@
 package com.craftfire.authapi.scripts.cms;
 
 import java.net.URLEncoder;
-import java.sql.Date;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -58,12 +58,20 @@ public class WordPress extends Script {
     private String currentUsername = null;
     private DataManager dataManager = null;
     private ScriptAPI scriptAPI = null;
+    private boolean init = false;
 
     public WordPress(ScriptAPI.Scripts script, String version) {
         super(script, version);
         this.userVersion = version;
+    }
+
+    public void init() {
+        if (this.init) {
+            return;
+        }
         this.dataManager = AuthAPI.getInstance().getDataManager();
         this.scriptAPI = AuthAPI.getInstance().getScriptAPI();
+        this.init = true;
     }
 
     @Override
@@ -99,6 +107,7 @@ public class WordPress extends Script {
 
     @Override
     public boolean authenticate(String username, String password) {
+        init();
         String hash = this.dataManager.getStringField("users", "user_pass",
                 "`user_login` = '" + username + "'");
         if (hash == null) {
@@ -119,29 +128,34 @@ public class WordPress extends Script {
 
     @Override
     public String getUsername(int userid) {
+        init();
         return this.dataManager.getStringField("users", "user_login",
                 "`ID` = '" + userid + "'");
     }
 
     @Override
     public int getUserID(String username) {
+        init();
         return this.dataManager.getIntegerField("users", "ID",
                 "`user_login` = '" + username + "'");
     }
 
     @Override
     public ScriptUser getLastRegUser() throws UnsupportedFunction {
+        init();
         return this.scriptAPI
                 .getUser(this.dataManager.getLastID("ID", "users"));
     }
 
     @Override
     public ScriptUser getUser(String username) throws UnsupportedFunction {
+        init();
         return this.scriptAPI.getUser(getUserID(username));
     }
 
     @Override
     public ScriptUser getUser(int userid) {
+        init();
         if (this.dataManager.exist("users", "ID", userid)) {
             ScriptUser user = new ScriptUser(userid, null, null);
             HashMap<String, Object> array = this.dataManager
@@ -156,7 +170,7 @@ public class WordPress extends Script {
                                 "`user_id` = '"
                                         + userid
                                         + "' AND `meta_key` = 'uae_user_activation_code'");
-                if (activation != null && activation.equalsIgnoreCase("active")) {
+                if (activation == null || activation.equalsIgnoreCase("active")) {
                     user.setActivated(true);
                 } else {
                     user.setActivated(false);
@@ -201,11 +215,13 @@ public class WordPress extends Script {
 
     @Override
     public void updateUser(ScriptUser user) throws SQLException {
+        init();
         HashMap<String, Object> data = new HashMap<String, Object>();
         data.put("user_login", user.getUsername());
         data.put("user_email", user.getEmail());
-        data.put("user_registered", new Date(user.getRegDate().getTime()));
-
+        if (user.getRegDate() != null) {
+            data.put("user_registered", new Date(user.getRegDate().getTime()));
+        }
         if (CraftCommons.unixHashIdentify(user.getPassword()) == null) {
             user.setPassword(hashPassword(null, user.getPassword()));
             data.put("user_pass", user.getPassword());
@@ -226,13 +242,14 @@ public class WordPress extends Script {
         this.dataManager.updateFields(data, "usermeta",
                 "`user_id` = '" + user.getID()
                         + "' AND `meta_key` = 'last_name'");
-        data.put("meta_value", String.valueOf(user.getLastLogin().getTime()));
-        this.dataManager.updateFields(data, "usermeta",
-                "`user_id` = '" + user.getID()
-                        + "' AND `meta_key` = 'last_user_login'");
-        this.dataManager.updateFields(data, "usermeta",
-                "`user_id` = '" + user.getID()
-                        + "' AND `meta_key` = 'wp-last-login'");
+        if (user.getLastLogin() != null) {
+            data.put("meta_value",
+                    String.valueOf(user.getLastLogin().getTime()));
+            this.dataManager.updateFields(data, "usermeta", "`user_id` = '"
+                    + user.getID() + "' AND `meta_key` = 'last_user_login'");
+            this.dataManager.updateFields(data, "usermeta", "`user_id` = '"
+                    + user.getID() + "' AND `meta_key` = 'wp-last-login'");
+        }
         data.clear();
         // TODO: Should we skip setting groups if no groups are cached?
         try {
@@ -244,6 +261,7 @@ public class WordPress extends Script {
 
     @Override
     public void createUser(ScriptUser user) throws SQLException {
+        init();
         HashMap<String, Object> data;
         if (CraftCommons.unixHashIdentify(user.getPassword()) == null) {
             user.setPassword(hashPassword(null, user.getPassword()));
@@ -312,6 +330,7 @@ public class WordPress extends Script {
 
     public List<Group> getGroups(int limit, boolean namesonly)
             throws UnsupportedFunction {
+        init();
         List<Group> groups = new ArrayList<Group>();
         if (limit > getGroupCount() | limit <= 0) {
             limit = getGroupCount();
@@ -363,6 +382,7 @@ public class WordPress extends Script {
         if (namesonly) {
             return group;
         }
+        init();
         List<ScriptUser> userlist = new ArrayList<ScriptUser>();
         if (groupid == 6) {
             if (this.dataManager.exist("sitemeta", "meta_key", "site_admins")) {
@@ -388,8 +408,13 @@ public class WordPress extends Script {
                 DataList d = I.next();
                 String capabilities = d.getStringField("meta_value");
                 int userid = d.getIntField("user_id");
-                Map<String, String> capmap = (Map<String, String>) CraftCommons
-                        .getUtil().phpUnserialize(capabilities);
+                Map<String, String> capmap = null;
+                try {
+                    capmap = (Map<String, String>) CraftCommons.getUtil()
+                            .phpUnserialize(capabilities);
+                } catch (IllegalStateException e) {
+                    continue;
+                }
                 String gname = groupname.toLowerCase();
                 if (capmap.containsKey(gname) && capmap.get(gname).equals("1")) {
                     userlist.add(this.scriptAPI.getUser(userid));
@@ -403,6 +428,7 @@ public class WordPress extends Script {
 
     @Override
     public Group getGroup(String group) throws UnsupportedFunction {
+        init();
         List<Group> groups = getGroups(0, true);
         for (Group grp : groups) {
             if (grp.getName().equalsIgnoreCase(group)) {
@@ -415,13 +441,17 @@ public class WordPress extends Script {
     @Override
     public List<Group> getUserGroups(String username)
             throws UnsupportedFunction, SQLException {
+        init();
         int userid = this.scriptAPI.getUserID(username);
         String capabilities = this.dataManager.getStringField("usermeta",
                 "meta_value",
                 "`meta_key` = 'wp_capabilities' AND `user_id` = '" + userid
                         + "'");
-        Map<Object, Object> capmap = (Map<Object, Object>) CraftCommons
-                .getUtil().phpUnserialize(capabilities);
+        Map<Object, Object> capmap = null;
+        if (capabilities != null && !capabilities.isEmpty()) {
+            capmap = (Map<Object, Object>) CraftCommons.getUtil()
+                    .phpUnserialize(capabilities);
+        }
         List<Group> allGroups = this.scriptAPI.getGroups(0);
         List<Group> uGroups = new ArrayList<Group>();
         Iterator<Group> I = allGroups.iterator();
@@ -438,7 +468,7 @@ public class WordPress extends Script {
                         uGroups.add(g);
                     }
                 }
-            } else {
+            } else if (capmap != null) {
                 String gname = g.getName().toLowerCase();
                 if (capmap.containsKey(gname) && capmap.get(gname).equals("1")) {
                     uGroups.add(g);
@@ -450,6 +480,7 @@ public class WordPress extends Script {
 
     public void setUserGroups(String username, List<Group> groups)
             throws SQLException {
+        init();
         int userid = this.getUserID(username);
         Map<String, String> capmap = new HashMap<String, String>();
         List<String> adminlist = null;
@@ -503,6 +534,7 @@ public class WordPress extends Script {
     @Override
     public void updateGroup(Group group) throws UnsupportedFunction,
             SQLException {
+        init();
         if (!getGroup(group.getID(), true).getName().equalsIgnoreCase(
                 group.getName())) {
             throw new UnsupportedFunction(
@@ -603,17 +635,20 @@ public class WordPress extends Script {
 
     @Override
     public int getPostCount(String username) {
+        init();
         return this.dataManager.getCount("comments", "`comment_author` = '"
                 + username + "'");
     }
 
     @Override
     public int getTotalPostCount() {
+        init();
         return this.dataManager.getCount("comments");
     }
 
     @Override
     public Post getLastPost() throws NumberFormatException, UnsupportedFunction {
+        init();
         return this.scriptAPI.getPost(this.dataManager.getLastID("comment_ID",
                 "comments"));
     }
@@ -621,6 +656,7 @@ public class WordPress extends Script {
     @Override
     public Post getLastUserPost(String username) throws NumberFormatException,
             UnsupportedFunction {
+        init();
         return this.scriptAPI.getPost(this.dataManager.getLastID("comment_ID",
                 "comments", "`comment_author` = '" + username + "'"));
     }
@@ -628,6 +664,7 @@ public class WordPress extends Script {
     @Override
     public List<Post> getPosts(int limit) throws NumberFormatException,
             UnsupportedFunction {
+        init();
         String limitstring = "";
         List<HashMap<String, Object>> array;
         List<Post> posts;
@@ -636,7 +673,7 @@ public class WordPress extends Script {
         }
         array = this.dataManager.getArrayList("SELECT `comment_ID` FROM `"
                 + this.dataManager.getPrefix()
-                + "comments` ORDER BY `post_id` ASC" + limitstring);
+                + "comments` ORDER BY `comment_id` ASC" + limitstring);
         posts = new ArrayList<Post>();
         for (HashMap<String, Object> record : array) {
             posts.add(this.scriptAPI.getPost(Integer.parseInt(record.get(
@@ -648,6 +685,7 @@ public class WordPress extends Script {
     @Override
     public List<Post> getPostsFromThread(int threadid, int limit)
             throws NumberFormatException, UnsupportedFunction {
+        init();
         String limitstring = "";
         List<HashMap<String, Object>> array;
         List<Post> posts;
@@ -659,9 +697,11 @@ public class WordPress extends Script {
                 + "comments` WHERE `comment_post_ID` = " + threadid
                 + "' ORDER BY `post_id` ASC" + limitstring);
         posts = new ArrayList<Post>();
-        for (HashMap<String, Object> record : array) {
-            posts.add(this.scriptAPI.getPost(Integer.parseInt(record.get(
-                    "comment_ID").toString())));
+        if (array != null) {
+            for (HashMap<String, Object> record : array) {
+                posts.add(this.scriptAPI.getPost(Integer.parseInt(record.get(
+                        "comment_ID").toString())));
+            }
         }
         return posts;
     }
@@ -669,9 +709,13 @@ public class WordPress extends Script {
     @Override
     public Post getPost(int postid) throws NumberFormatException,
             UnsupportedFunction {
+        init();
         HashMap<String, Object> array = this.dataManager
                 .getArray("SELECT * FROM `" + this.dataManager.getPrefix()
-                        + "comments` WHERE `comment_ID` = '" + postid);
+                        + "comments` WHERE `comment_ID` = '" + postid + "'");
+        if (array.isEmpty()) {
+            return null;
+        }
         int board = this.dataManager.getStringField("posts", "post_type",
                 "`ID` = '" + array.get("comment_post_ID") + "'")
                 .equalsIgnoreCase("post") ? 0 : 1;
@@ -687,6 +731,7 @@ public class WordPress extends Script {
 
     @Override
     public void updatePost(Post post) throws SQLException {
+        init();
         HashMap<String, Object> data = new HashMap<String, Object>();
         data.put("comment_post_ID", post.getThreadID());
         if (post.getAuthor() != null) {
@@ -698,7 +743,7 @@ public class WordPress extends Script {
             data.put("user_id", post.getAuthor().getID());
         }
         data.put("comment_date", new Date(new java.util.Date().getTime()));
-        data.put("comment_date_gtm", null /* TODO */);
+        data.put("comment_date_gmt", null /* TODO */);
         data.put("comment_content", post.getBody());
         this.dataManager.updateFields(data, "comments", "`comment_ID` = '"
                 + post.getID() + "'");
@@ -706,6 +751,7 @@ public class WordPress extends Script {
 
     @Override
     public void createPost(Post post) throws SQLException {
+        init();
         HashMap<String, Object> data = new HashMap<String, Object>();
         data.put("comment_post_ID", post.getThreadID());
         if (post.getAuthor() != null) {
@@ -725,30 +771,35 @@ public class WordPress extends Script {
 
     @Override
     public int getThreadCount(String username) {
+        init();
         return this.dataManager.getCount("posts", "`post_author` = '"
                 + getUserID(username) + "'");
     }
 
     @Override
     public int getTotalThreadCount() {
+        init();
         return this.dataManager.getCount("posts");
     }
 
     @Override
     public Thread getLastThread() throws UnsupportedFunction {
-        return this.scriptAPI.getThread(this.dataManager.getLastID("post_id",
+        init();
+        return this.scriptAPI.getThread(this.dataManager.getLastID("ID",
                 "posts"));
     }
 
     @Override
     public Thread getLastUserThread(String username) throws UnsupportedFunction {
-        return this.scriptAPI.getThread(this.dataManager.getLastID("post_id",
+        init();
+        return this.scriptAPI.getThread(this.dataManager.getLastID("ID",
                 "posts", "`post_author` = '" + getUserID(username) + "'"));
     }
 
     @Override
     public Thread getThread(int threadid) throws NumberFormatException,
             UnsupportedFunction {
+        init();
         Thread thread;
         HashMap<String, Object> array = this.dataManager
                 .getArray("SELECT * FROM `" + this.dataManager.getPrefix()
@@ -756,12 +807,19 @@ public class WordPress extends Script {
         List<HashMap<String, Object>> array1 = this.dataManager
                 .getArrayList("SELECT `comment_ID` FROM `"
                         + this.dataManager.getPrefix()
-                        + "comments` WHERE `comment_post_ID` = " + threadid
-                        + "' ORDER BY `post_id` ASC");
-        int firstpost = Integer.parseInt(array1.get(0).get("comment_ID")
-                .toString());
-        int lastpost = Integer.parseInt(array1.get(array1.size())
-                .get("comment_ID").toString());
+                        + "comments` WHERE `comment_post_ID` = '" + threadid
+                        + "' ORDER BY `comment_id` ASC");
+        if (array.isEmpty()) {
+            return null;
+        }
+        int firstpost = 0;
+        int lastpost = 0;
+        if (!array1.isEmpty()) {
+            firstpost = Integer.parseInt(array1.get(0).get("comment_ID")
+                    .toString());
+            lastpost = Integer.parseInt(array1.get(array1.size() - 1)
+                    .get("comment_ID").toString());
+        }
         int boardid = array.get("post_type").toString()
                 .equalsIgnoreCase("post") ? 0 : 1;
         if (boardid > 0
@@ -791,6 +849,7 @@ public class WordPress extends Script {
     @Override
     public List<Thread> getThreads(int limit) throws NumberFormatException,
             UnsupportedFunction {
+        init();
         String limitstring = "";
         List<Thread> threads;
         List<HashMap<String, Object>> array;
@@ -809,9 +868,12 @@ public class WordPress extends Script {
 
     @Override
     public void updateThread(Thread thread) throws SQLException {
+        init();
         HashMap<String, Object> data = new HashMap<String, Object>();
         data.put("post_author", thread.getAuthor().getID());
-        data.put("post_date", new Date(thread.getThreadDate().getTime()));
+        if (thread.getThreadDate() != null) {
+            data.put("post_date", new Date(thread.getThreadDate().getTime()));
+        }
         data.put("post_date_gmt", null /* TODO */);
         data.put("post_content", thread.getBody());
         data.put("post_title", thread.getSubject());
@@ -851,6 +913,7 @@ public class WordPress extends Script {
 
     @Override
     public void createThread(Thread thread) throws SQLException {
+        init();
         HashMap<String, Object> data = new HashMap<String, Object>();
         data.put("post_author", thread.getAuthor().getID());
         data.put("post_date", new Date(new java.util.Date().getTime()));
@@ -890,6 +953,7 @@ public class WordPress extends Script {
 
     @Override
     public int getUserCount() {
+        init();
         return this.dataManager.getCount("users");
     }
 
@@ -899,6 +963,7 @@ public class WordPress extends Script {
          * 6 WordPress roles: Subscriber, Contributor, Author, Editor,
          * Administrator, Super Admin
          */
+        init();
         if (this.dataManager.exist("sitemeta", "meta_key", "site_admins")) {
             // Super Admin doesn't always exist.
             return 6;
@@ -909,6 +974,7 @@ public class WordPress extends Script {
 
     @Override
     public String getHomeURL() {
+        init();
         return this.dataManager.getStringField("options", "option_value",
                 "`option_name` = 'siteurl'");
     }
@@ -957,6 +1023,7 @@ public class WordPress extends Script {
 
     @Override
     public boolean isRegistered(String username) {
+        init();
         return this.dataManager.exist("users", "user_login", username);
     }
 }
