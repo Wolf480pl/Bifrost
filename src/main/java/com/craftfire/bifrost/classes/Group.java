@@ -1,15 +1,15 @@
 /*
- * This file is part of AuthAPI.
+ * This file is part of Bifrost.
  *
  * Copyright (c) 2011-2012, CraftFire <http://www.craftfire.com/>
- * AuthAPI is licensed under the GNU Lesser General Public License.
+ * Bifrost is licensed under the GNU Lesser General Public License.
  *
- * AuthAPI is free software: you can redistribute it and/or modify
+ * Bifrost is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * AuthAPI is distributed in the hope that it will be useful,
+ * Bifrost is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
@@ -19,24 +19,28 @@
  */
 package com.craftfire.bifrost.classes;
 
-import com.craftfire.bifrost.Bifrost;
-import com.craftfire.bifrost.enums.CacheGroup;
-import com.craftfire.bifrost.exceptions.UnsupportedFunction;
-
 import java.sql.SQLException;
 import java.util.List;
+
+import com.craftfire.bifrost.Bifrost;
+import com.craftfire.bifrost.ScriptHandle;
+import com.craftfire.bifrost.enums.CacheGroup;
+import com.craftfire.bifrost.exceptions.UnsupportedFunction;
 
 public class Group implements GroupInterface {
     private int groupid, usercount;
     private String groupname, groupdescription;
     private List<ScriptUser> users;
+    private final Script script;
 
-    public Group(int groupid, String groupname) {
+    public Group(Script script, int groupid, String groupname) {
+        this.script = script;
         this.groupid = groupid;
         this.groupname = groupname;
     }
 
-    public Group(String groupname) {
+    public Group(Script script, String groupname) {
+        this.script = script;
         this.groupname = groupname;
     }
 
@@ -92,27 +96,27 @@ public class Group implements GroupInterface {
 
     @Override
     public void updateGroup() throws SQLException, UnsupportedFunction {
-        Bifrost.getInstance().getScriptAPI().updateGroup(this);
+        Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).updateGroup(this);
     }
 
     @Override
     public void createGroup() throws SQLException, UnsupportedFunction {
-        Bifrost.getInstance().getScriptAPI().createGroup(this);
+        Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).createGroup(this);
     }
 
-    public static boolean hasCache(Object id) {
-        return Cache.contains(CacheGroup.GROUP, id);
+    public static boolean hasCache(ScriptHandle handle, Object id) {
+        return handle.getCache().contains(CacheGroup.GROUP, id);
     }
 
-    public static void addCache(Group group) {
-        Cache.put(CacheGroup.GROUP, group.getID(), group);
+    public static void addCache(ScriptHandle handle, Group group) {
+        handle.getCache().put(CacheGroup.GROUP, group.getID(), group);
     }
 
     @SuppressWarnings("unchecked")
-    public static Group getCache(Object id) {
+    public static Group getCache(ScriptHandle handle, Object id) {
         Group temp = null;
-        if (Cache.contains(CacheGroup.GROUP, id)) {
-            temp = (Group) Cache.get(CacheGroup.GROUP, id);
+        if (handle.getCache().contains(CacheGroup.GROUP, id)) {
+            temp = (Group) handle.getCache().get(CacheGroup.GROUP, id);
         }
         return temp;
     }

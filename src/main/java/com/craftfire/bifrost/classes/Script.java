@@ -1,15 +1,15 @@
 /*
- * This file is part of AuthAPI.
+ * This file is part of Bifrost.
  *
  * Copyright (c) 2011-2012, CraftFire <http://www.craftfire.com/>
- * AuthAPI is licensed under the GNU Lesser General Public License.
+ * Bifrost is licensed under the GNU Lesser General Public License.
  *
- * AuthAPI is free software: you can redistribute it and/or modify
+ * Bifrost is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * AuthAPI is distributed in the hope that it will be useful,
+ * Bifrost is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
@@ -19,27 +19,30 @@
  */
 package com.craftfire.bifrost.classes;
 
-import com.craftfire.bifrost.Bifrost;
-import com.craftfire.bifrost.ScriptAPI.Scripts;
-import com.craftfire.bifrost.exceptions.UnsupportedFunction;
-import com.craftfire.commons.CraftCommons;
-import com.craftfire.commons.managers.CacheManager;
-import com.craftfire.commons.managers.DataManager;
-import com.craftfire.commons.managers.LoggingManager;
-
 import java.sql.SQLException;
 import java.util.List;
+
+import com.craftfire.bifrost.Bifrost;
+import com.craftfire.bifrost.enums.Scripts;
+import com.craftfire.bifrost.exceptions.UnsupportedFunction;
+import com.craftfire.commons.CraftCommons;
+import com.craftfire.commons.managers.DataManager;
+import com.craftfire.commons.managers.LoggingManager;
 
 public class Script implements ScriptInterface {
 	private final String version;
 	private final Scripts script;
+    private final DataManager dataManager;
+    private final Cache cache;
 
-    protected Script(Scripts script, String version) {
+    protected Script(Scripts script, String version, DataManager dataManager) {
 		this.version = version;
 		this.script = script;
+        this.dataManager = dataManager;
+        this.cache = new Cache();
 	}
     
-    public Bifrost getAuthAPI() {
+    public Bifrost getBifrost() {
         return Bifrost.getInstance();
     }
     
@@ -47,16 +50,12 @@ public class Script implements ScriptInterface {
         return Bifrost.getInstance().getLoggingManager();
     }
 
-    public CacheManager getCacheManager() {
-        return Bifrost.getInstance().getCacheManager();
-    }
-
     public Cache getCache() {
-        return Bifrost.getInstance().getCache();
+        return this.cache;
     }
     
     public DataManager getDataManager() {
-        return Bifrost.getInstance().getDataManager();
+        return this.dataManager;
     }
     
     public Scripts getScript() {
@@ -64,17 +63,17 @@ public class Script implements ScriptInterface {
     }
 
 	@Override
-	public ScriptUser getUser(String username) throws UnsupportedFunction {
+	public ScriptUser getUser(String username) throws UnsupportedFunction, SQLException {
 		throw new UnsupportedFunction();
 	}
 
 	@Override
-	public ScriptUser getUser(int userid) throws UnsupportedFunction {
+	public ScriptUser getUser(int userid) throws UnsupportedFunction, SQLException {
 		throw new UnsupportedFunction();
 	}
 
 	@Override
-	public ScriptUser getLastRegUser() throws UnsupportedFunction {
+	public ScriptUser getLastRegUser() throws UnsupportedFunction, SQLException {
 		throw new UnsupportedFunction();
 	}
 
@@ -110,10 +109,10 @@ public class Script implements ScriptInterface {
 
 	@Override
 	public String getScriptName() throws UnsupportedFunction {
-		throw new UnsupportedFunction();
+        throw new UnsupportedFunction();
 	}
 
-	@Override
+    @Override
 	public String getScriptShortname() throws UnsupportedFunction {
 		throw new UnsupportedFunction();
 	}
@@ -129,7 +128,7 @@ public class Script implements ScriptInterface {
 	}
 
 	@Override
-	public String getUsername(int userid) throws UnsupportedFunction {
+	public String getUsername(int userid) throws UnsupportedFunction, SQLException {
 		throw new UnsupportedFunction();
 	}
 
@@ -149,7 +148,7 @@ public class Script implements ScriptInterface {
 	}
 
 	@Override
-	public List<Group> getGroups(int limit) throws UnsupportedFunction {
+	public List<Group> getGroups(int limit) throws UnsupportedFunction, SQLException {
 		throw new UnsupportedFunction();
 	}
 
@@ -169,7 +168,7 @@ public class Script implements ScriptInterface {
 	}
 
 	@Override
-	public List<Group> getUserGroups(String username) throws UnsupportedFunction, SQLException {
+	public List<Group> getUserGroups(String username) throws UnsupportedFunction {
 		throw new UnsupportedFunction();
 	}
 

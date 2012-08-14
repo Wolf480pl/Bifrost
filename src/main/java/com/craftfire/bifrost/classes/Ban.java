@@ -1,15 +1,15 @@
 /*
- * This file is part of AuthAPI.
+ * This file is part of Bifrost.
  *
  * Copyright (c) 2011-2012, CraftFire <http://www.craftfire.com/>
- * AuthAPI is licensed under the GNU Lesser General Public License.
+ * Bifrost is licensed under the GNU Lesser General Public License.
  *
- * AuthAPI is free software: you can redistribute it and/or modify
+ * Bifrost is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * AuthAPI is distributed in the hope that it will be useful,
+ * Bifrost is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
@@ -19,26 +19,30 @@
  */
 package com.craftfire.bifrost.classes;
 
-import com.craftfire.bifrost.Bifrost;
-import com.craftfire.bifrost.enums.CacheGroup;
-import com.craftfire.bifrost.exceptions.UnsupportedFunction;
-
 import java.sql.SQLException;
 import java.util.Date;
+
+import com.craftfire.bifrost.Bifrost;
+import com.craftfire.bifrost.ScriptHandle;
+import com.craftfire.bifrost.enums.CacheGroup;
+import com.craftfire.bifrost.exceptions.UnsupportedFunction;
 
 public class Ban implements BanInterface {
     private String name, email, ip, reason, notes;
     private int banid, userid;
     private Date startdate, enddate;
+    private final Script script;
 
-    public Ban(int banid, String name, String email, String ip) {
+    public Ban(Script script, int banid, String name, String email, String ip) {
+        this.script = script;
         this.banid = banid;
         this.name = name;
         this.email = email;
         this.ip = ip;
     }
 
-    public Ban(String name, String email, String ip) {
+    public Ban(Script script, String name, String email, String ip) {
+        this.script = script;
         this.name = name;
         this.email = email;
         this.ip = ip;
@@ -155,27 +159,27 @@ public class Ban implements BanInterface {
 
     @Override
     public void updateBan() throws SQLException, UnsupportedFunction {
-        Bifrost.getInstance().getScriptAPI().updateBan(this);
+        Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).updateBan(this);
     }
 
     @Override
     public void addBan() throws SQLException, UnsupportedFunction {
-        Bifrost.getInstance().getScriptAPI().addBan(this);
+        Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).addBan(this);
     }
 
-    public static boolean hasCache(Object id) {
-        return Cache.contains(CacheGroup.BAN, id);
+    public static boolean hasCache(ScriptHandle handle, Object id) {
+        return handle.getCache().contains(CacheGroup.BAN, id);
     }
 
-    public static void addCache(Ban ban) {
-        Cache.put(CacheGroup.BAN, ban.getID(), ban);
+    public static void addCache(ScriptHandle handle, Ban ban) {
+        handle.getCache().put(CacheGroup.BAN, ban.getID(), ban);
     }
 
     @SuppressWarnings("unchecked")
-    public static Ban getCache(Object id) {
+    public static Ban getCache(ScriptHandle handle, Object id) {
         Ban temp = null;
-        if (Cache.contains(CacheGroup.BAN, id)) {
-            temp = (Ban) Cache.get(CacheGroup.BAN, id);
+        if (handle.getCache().contains(CacheGroup.BAN, id)) {
+            temp = (Ban) handle.getCache().get(CacheGroup.BAN, id);
         }
         return temp;
     }

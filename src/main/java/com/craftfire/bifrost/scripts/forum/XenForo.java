@@ -1,8 +1,5 @@
 /*
- * This file is part of AuthAPI.
- *
- * Copyright (c) 2011-2012, CraftFire <http://www.craftfire.com/>
- * AuthAPI is licensed under the GNU Lesser General Public License.
+ * This file is part of AuthAPI <http://www.craftfire.com/>.
  *
  * AuthAPI is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -19,12 +16,6 @@
  */
 package com.craftfire.bifrost.scripts.forum;
 
-import com.craftfire.bifrost.ScriptAPI;
-import com.craftfire.bifrost.classes.*;
-import com.craftfire.bifrost.exceptions.UnsupportedFunction;
-import com.craftfire.commons.CraftCommons;
-import com.craftfire.commons.enums.Encryption;
-
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -32,7 +23,27 @@ import java.sql.Blob;
 import java.sql.SQLException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Random;
+
+import com.craftfire.bifrost.classes.Ban;
+import com.craftfire.bifrost.classes.Gender;
+import com.craftfire.bifrost.classes.Group;
+import com.craftfire.bifrost.classes.Post;
+import com.craftfire.bifrost.classes.PrivateMessage;
+import com.craftfire.bifrost.classes.Script;
+import com.craftfire.bifrost.classes.ScriptUser;
+import com.craftfire.bifrost.classes.Thread;
+import com.craftfire.bifrost.enums.Scripts;
+import com.craftfire.bifrost.exceptions.UnsupportedFunction;
+import com.craftfire.commons.CraftCommons;
+import com.craftfire.commons.database.DataList;
+import com.craftfire.commons.database.Results;
+import com.craftfire.commons.enums.Encryption;
+import com.craftfire.commons.managers.DataManager;
 
 //TODO: Convert arrays to use Result class
 public class XenForo extends Script {
@@ -40,38 +51,38 @@ public class XenForo extends Script {
     private final String shortName = "xf";
     private final String encryption = "sha1";
     private final String[] versionRanges = {"1.0.4", "1.1.2"};
-    private final String userVersion;
     private String currentUsername = null;
 
-    public XenForo(ScriptAPI.Scripts script, String version) {
-        super(script, version);
-        this.userVersion = version;
+    public XenForo(Scripts script, String version, DataManager dataManager) {
+        super(script, version, dataManager);
     }
 
+    @Override
     public String[] getVersionRanges() {
         return this.versionRanges;
     }
 
+    @Override
     public String getLatestVersion() {
         return this.versionRanges[0];
     }
 
-    public String getVersion() {
-        return this.userVersion;
-    }
-
+    @Override
     public String getEncryption() {
         return this.encryption;
     }
 
+    @Override
     public String getScriptName() {
         return this.scriptName;
     }
 
+    @Override
     public String getScriptShortname() {
         return this.shortName;
     }
 
+    @Override
     public boolean authenticate(String username, String password) {
         Blob hashBlob =
                 this.getDataManager().getBlobField("user_authenticate", "data", "`user_id` = '" + getUserID(username) +
@@ -103,114 +114,119 @@ public class XenForo extends Script {
         return hashPassword(salt, password).equals(hash);
     }
 
+    @Override
     public String hashPassword(String salt, String password) {
         return CraftCommons.encrypt(Encryption.SHA256, CraftCommons.encrypt(Encryption.SHA256, password) + salt);
     }
 
+    @Override
     public String getUsername(int userid) {
         return this.getDataManager().getStringField("user", "username", "`user_id` = '" + userid + "'");
     }
 
+    @Override
     public int getUserID(String username) {
         return this.getDataManager().getIntegerField("user", "user_id", "`username` = '" + username + "'");
     }
 
+    @Override
     public ScriptUser getLastRegUser() {
         return getUser(this.getDataManager().getIntegerField("SELECT `user_id` FROM `" + this.getDataManager().getPrefix() +
                 "user` ORDER BY `user_id` ASC LIMIT 1"));
     }
 
+    @Override
     public ScriptUser getUser(String username) {
         return getUser(getUserID(username));
     }
 
+    @Override
     public ScriptUser getUser(int userid) {
-        if (ScriptUser.hasCache(userid)) {
-            return ScriptUser.getCache(userid);
-        } else if (isRegistered(getUsername(userid))) {
-            ScriptUser user = new ScriptUser(userid, null, null);
-            HashMap<String, Object> array = this.getDataManager().getArray(
-                    "SELECT * FROM `" + this.getDataManager().getPrefix() + "user` WHERE `user_id` = '" +
-                            userid + "' LIMIT 1");
-            if (array.size() > 0) {
-                if (array.get("user_state").toString().equalsIgnoreCase("valid")) {
-                    user.setActivated(true);
-                } else {
-                    user.setActivated(false);
-                }
-                if (! array.get("gravatar").toString().isEmpty()) {
-                    user.setAvatarURL("http://www.gravatar.com/avatar/" +
-                            CraftCommons.encrypt(Encryption.MD5, array.get("gravatar").toString().toLowerCase()));
-                }
-                user.setEmail(array.get("email").toString());
-                if (array.get("gender").toString().equalsIgnoreCase("male")) {
-                    user.setGender(Gender.MALE);
-                } else if (array.get("gender").toString().equalsIgnoreCase("female")) {
-                    user.setGender(Gender.FEMALE);
-                } else {
-                    user.setGender(Gender.UNKNOWN);
-                }
-                user.setLastLogin(new Date(Long.parseLong(array.get("last_activity").toString()) * 1000));
-                user.setRegDate(new Date(Long.parseLong(array.get("register_date").toString()) * 1000));
-                Blob hashBlob =
-                        this.getDataManager().getBlobField("user_authenticate", "data", "`user_id` = '" + userid + "'");
-                if (hashBlob != null) {
-                    int offset = - 1;
-                    int chunkSize = 1024;
-                    StringBuilder stringBuffer = new StringBuilder();
-                    try {
-                        long blobLength = hashBlob.length();
-                        if (chunkSize > blobLength) {
-                            chunkSize = (int) blobLength;
-                        }
-                        char buffer[] = new char[chunkSize];
-                        Reader reader = new InputStreamReader(hashBlob.getBinaryStream());
-                        while ((offset = reader.read(buffer)) != - 1) {
-                            stringBuffer.append(buffer, 0, offset);
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } catch (SQLException e) {
-                        e.printStackTrace();
-                    }
-                    String cache = stringBuffer.toString();
-                    user.setPassword(CraftCommons.forumCacheValue(cache, "hash"));
-                    user.setPasswordSalt(CraftCommons.forumCacheValue(cache, "salt"));
-                }
-                user.setUsername(array.get("username").toString());
-                user.setUserTitle(array.get("custom_title").toString());
-                user.setLastIP(CraftCommons.long2ip((long)this.getDataManager().getIntegerField(
-                        "ip",
-                        "ip",
-                        "`user_id` = '" + user.getID() + "'")));
-                user.setRegIP(CraftCommons.long2ip((long) this.getDataManager().getIntegerField("ip", "ip",
-                        "`user_id` = '" +
-                                user.getID() +
-                                "' AND `action` = 'register'")));
+        ScriptUser user = new ScriptUser(this, userid, null, null);
+        Results results = this.getDataManager().getResults(
+                "SELECT * FROM `" + this.getDataManager().getPrefix() + "user` WHERE `user_id` = '" +
+                        userid + "' LIMIT 1");
+        DataList row = results.getFirstResult();
+        if (results.getRowsCount() > 0) {
+            if (row.getStringField("user_state").equalsIgnoreCase("valid")) {
+                user.setActivated(true);
+            } else {
+                user.setActivated(false);
             }
-
-            array = this.getDataManager().getArray(
-                    "SELECT * FROM `" + this.getDataManager().getPrefix() + "user_profile` WHERE `user_id` = '" +
-                            userid + "' LIMIT 1");
-            if (array.size() > 0) {
-                String bdate = array.get("dob_day").toString() + " " + array.get("dob_month").toString() + " " +
-                        array.get("dob_year").toString();
+            if (!row.getStringField("gravatar").isEmpty()) {
+                user.setAvatarURL("http://www.gravatar.com/avatar/" +
+                        CraftCommons.encrypt(Encryption.MD5, row.getStringField("gravatar").toLowerCase()));
+            }
+            user.setEmail(row.getStringField("email"));
+            if (row.getStringField("gender").equalsIgnoreCase("male")) {
+                user.setGender(Gender.MALE);
+            } else if (row.getStringField("gender").equalsIgnoreCase("female")) {
+                user.setGender(Gender.FEMALE);
+            } else {
+                user.setGender(Gender.UNKNOWN);
+            }
+            user.setLastLogin(new Date(row.getLongField("last_activity") * 1000));
+            user.setRegDate(new Date(row.getLongField("register_date") * 1000));
+            Blob hashBlob =
+                    this.getDataManager().getBlobField("user_authenticate", "data", "`user_id` = '" + userid + "'");
+            if (hashBlob != null) {
+                int offset = - 1;
+                int chunkSize = 1024;
+                StringBuilder stringBuffer = new StringBuilder();
                 try {
-                    SimpleDateFormat format = new SimpleDateFormat("d M yyyy");
-                    user.setBirthday(format.parse(bdate));
-                } catch (ParseException e) {
+                    long blobLength = hashBlob.length();
+                    if (chunkSize > blobLength) {
+                        chunkSize = (int) blobLength;
+                    }
+                    char buffer[] = new char[chunkSize];
+                    Reader reader = new InputStreamReader(hashBlob.getBinaryStream());
+                    while ((offset = reader.read(buffer)) != - 1) {
+                        stringBuffer.append(buffer, 0, offset);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (SQLException e) {
                     e.printStackTrace();
                 }
-                if (! array.get("status").toString().isEmpty()) {
-                    user.setStatusMessage(array.get("status").toString());
-                }
+                String cache = stringBuffer.toString();
+                //TODO: php deserializer
+                user.setPassword(CraftCommons.forumCacheValue(cache, "hash"));
+                user.setPasswordSalt(CraftCommons.forumCacheValue(cache, "salt"));
             }
-
-            return user;
+            user.setUsername(row.getStringField("username"));
+            user.setUserTitle(row.getStringField("custom_title"));
+            user.setLastIP(CraftCommons.long2ip((long)this.getDataManager().getIntegerField(
+                    "ip",
+                    "ip",
+                    "`user_id` = '" + user.getID() + "'")));
+            user.setRegIP(CraftCommons.long2ip((long) this.getDataManager().getIntegerField("ip", "ip",
+                    "`user_id` = '" +
+                            user.getID() +
+                            "' AND `action` = 'register'")));
         }
-        return null;
+
+        results = this.getDataManager().getResults(
+                "SELECT * FROM `" + this.getDataManager().getPrefix() + "user_profile` WHERE `user_id` = '" +
+                        userid + "' LIMIT 1");
+        row = results.getFirstResult();
+        if (results.getRowsCount() > 0) {
+            String bdate = row.getStringField("dob_day") + " " + row.getStringField("dob_month") + " " +
+                    row.getStringField("dob_year");
+            try {
+                SimpleDateFormat format = new SimpleDateFormat("d M yyyy");
+                user.setBirthday(format.parse(bdate));
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+            if (!row.getStringField("status").isEmpty()) {
+                user.setStatusMessage(row.getStringField("status"));
+            }
+        }
+
+        return user;
     }
 
+    @Override
     public void updateUser(ScriptUser user) throws SQLException {
         long timestamp = new Date().getTime() / 1000;
         HashMap<String, Object> data = new HashMap<String, Object>();
@@ -292,6 +308,7 @@ public class XenForo extends Script {
         data.clear();
     }
 
+    @Override
     public void createUser(ScriptUser user) throws SQLException {
         long timestamp = new Date().getTime() / 1000;
         Random r = new Random();
@@ -343,9 +360,9 @@ public class XenForo extends Script {
             data.put("dob_year", format.format(user.getBirthday()));
         }
         this.getDataManager().insertFields(data, "user_profile");
-        if (CraftCommons.inVersionRange(this.versionRanges[0], this.userVersion)) {
+        if (CraftCommons.inVersionRange(this.versionRanges[0], this.getVersion())) {
             this.getDataManager().updateBlob("user_profile", "identities", "`user_id` = '" + user.getID() + "'", "a:0:{}");
-        } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.userVersion)) {
+        } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.getVersion())) {
             this.getDataManager().updateBlob("user_profile", "custom_fields", "`user_id` = '" + user.getID() + "'", "a:0:{}");
         }
         if (user.getStatusMessage() != null && ! user.getStatusMessage().isEmpty()) {
@@ -376,6 +393,7 @@ public class XenForo extends Script {
             this.getDataManager().updateFields(data, "user_profile", "`user_id` = '" + user.getID() + "'");
         }
 
+        //TODO: PHP deserialize?
         String stringdata =
                 "a:3:{s:4:\"hash\";s:64:\"" + user.getPassword() + "\";s:4:\"salt\";s:64:\"" + user.getPasswordSalt() +
                         "\";s:8:\"hashFunc\";s:6:\"sha256\";}";
@@ -395,6 +413,7 @@ public class XenForo extends Script {
         data.clear();
     }
 
+    @Override
     public List<Group> getGroups(int limit) {
         String limitstring = "";
         if (limit > 0) {
@@ -410,6 +429,7 @@ public class XenForo extends Script {
         return groups;
     }
 
+    @Override
     public Group getGroup(int groupid) {
         HashMap<String, Object> array = this.getDataManager().getArray(
                 "SELECT * FROM `" + this.getDataManager().getPrefix() + "user_group` WHERE `user_group_id` = '" + groupid +
@@ -428,18 +448,20 @@ public class XenForo extends Script {
         }
         this.currentUsername = null;
         Group group =
-                new Group(Integer.parseInt(array.get("user_group_id").toString()),
+                new Group(this, Integer.parseInt(array.get("user_group_id").toString()),
                         array.get("title").toString());
         group.setUserCount(this.getDataManager().getCount("user", "`user_group_id` = '" + groupid + "'"));
         group.setUsers(users);
         return group;
     }
 
+    @Override
     public int getGroupID(String group) {
         /*TODO*/
         return 0;
     }
 
+    @Override
     public Group getGroup(String group) {
         HashMap<String, Object> array = this.getDataManager().getArray(
                 "SELECT `user_group_id` FROM `" + this.getDataManager().getPrefix() +
@@ -447,6 +469,7 @@ public class XenForo extends Script {
         return getGroup(Integer.parseInt(array.get("user_group_id").toString()));
     }
 
+    @Override
     public List<Group> getUserGroups(String username) {
         this.currentUsername = username;
         List<Group> groups = new ArrayList<Group>();
@@ -469,6 +492,7 @@ public class XenForo extends Script {
         return groups;
     }
 
+    @Override
     public void updateGroup(Group group) throws SQLException {
         HashMap<String, Object> data = new HashMap<String, Object>();
         data.put("title", group.getName());
@@ -476,6 +500,7 @@ public class XenForo extends Script {
         data.clear();
     }
 
+    @Override
     public void createGroup(Group group) throws SQLException {
         HashMap<String, Object> data = new HashMap<String, Object>();
         data.put("title", group.getName());
@@ -484,6 +509,7 @@ public class XenForo extends Script {
         data.clear();
     }
 
+    @Override
     public PrivateMessage getPM(int pmid) {
         PrivateMessage pm = new PrivateMessage(this, pmid);
         HashMap<String, Object> array = this.getDataManager().getArray(
@@ -512,7 +538,7 @@ public class XenForo extends Script {
                 if (map.get("recipient_state").toString().equalsIgnoreCase("0")) {
                     pm.setDeleted(recipient, false);
                 } else {
-                    pm.setRead(recipient, true);
+                    pm.setDeleted(recipient, true);
                 }
             }
             pm.setRecipients(recipients);
@@ -520,6 +546,7 @@ public class XenForo extends Script {
         return pm;
     }
 
+    @Override
     public List<PrivateMessage> getPMsSent(String username, int limit) {
         String limitstring = "";
         if (limit > 0) {
@@ -537,6 +564,7 @@ public class XenForo extends Script {
         return pms;
     }
 
+    @Override
     public List<PrivateMessage> getPMsReceived(String username, int limit) {
         int userID = getUserID(username);
         String limitstring = "";
@@ -569,12 +597,14 @@ public class XenForo extends Script {
         return pms;
     }
 
+    @Override
     public int getPMSentCount(String username) {
         return this.getDataManager().getIntegerField("SELECT COUNT(*) FROM `" + this.getDataManager().getPrefix() +
                 "conversation_message` WHERE `user_id` = '" + getUserID(username) +
                 "'");
     }
 
+    @Override
     public int getPMReceivedCount(String username) {
         /*TODO*/
         return this.getDataManager().getIntegerField("SELECT COUNT(*) FROM `" + this.getDataManager().getPrefix() +
@@ -582,6 +612,7 @@ public class XenForo extends Script {
                 "'");
     }
 
+    @Override
     public void updatePrivateMessage(PrivateMessage pm) throws SQLException {
         HashMap<String, Object> data = new HashMap<String, Object>();
         data.put("message", pm.getBody());
@@ -614,6 +645,7 @@ public class XenForo extends Script {
         data.clear();
     }
 
+    @Override
     public void createPrivateMessage(PrivateMessage pm) throws SQLException {
         Long timestamp = new Date().getTime() / 1000;
         HashMap<String, Object> data = new HashMap<String, Object>();
@@ -634,7 +666,7 @@ public class XenForo extends Script {
         data.put("user_id", pm.getSender().getID());
         data.put("username", pm.getSender().getUsername());
         data.put("message", pm.getBody());
-        if (!CraftCommons.inVersionRange(this.versionRanges[0], this.userVersion)) {
+        if (!CraftCommons.inVersionRange(this.versionRanges[0], this.getVersion())) {
             data.put("ip_id", ipID);
         }
         this.getDataManager().insertFields(data, "conversation_message");
@@ -680,25 +712,30 @@ public class XenForo extends Script {
         data.clear();
     }
 
+    @Override
     public int getPostCount(String username) {
         return this.getDataManager().getCount("post", "`user_id` = '" + getUserID(username) + "' AND `position` != '0'");
     }
 
+    @Override
     public int getTotalPostCount() {
         return this.getDataManager().getCount("post", "`position` != '0'");
     }
 
+    @Override
     public Post getLastPost() {
         return getPost(this.getDataManager().getIntegerField(
                 "SELECT `post_id` FROM `" + this.getDataManager().getPrefix() + "post` ORDER BY `post_id` ASC LIMIT 1"));
     }
 
+    @Override
     public Post getLastUserPost(String username) {
         return getPost(this.getDataManager().getIntegerField(
                 "SELECT `post_id` FROM `" + this.getDataManager().getPrefix() + "post` WHERE `user_id` = '" +
                         getUserID(username) + "' AND `position` != '0' ORDER BY `post_id` ASC LIMIT 1"));
     }
 
+    @Override
     public List<Post> getPosts(int limit) {
         String limitstring = "";
         if (limit > 0) {
@@ -714,6 +751,7 @@ public class XenForo extends Script {
         return posts;
     }
 
+    @Override
     public List<Post> getPostsFromThread(int threadid, int limit) {
         String limitstring = "";
         if (limit > 0) {
@@ -730,6 +768,7 @@ public class XenForo extends Script {
         return posts;
     }
 
+    @Override
     public Post getPost(int postid) {
         HashMap<String, Object> array = this.getDataManager().getArray(
                 "SELECT * FROM `" + this.getDataManager().getPrefix() + "post` WHERE `post_id` = '" + postid + "' LIMIT 1");
@@ -738,7 +777,7 @@ public class XenForo extends Script {
                         .toString()) +
                 "'");
         Post post =
-                new Post(Integer.parseInt(array.get("post_id").toString()),
+                new Post(this, Integer.parseInt(array.get("post_id").toString()),
                         Integer.parseInt(array.get("thread_id").toString()), nodeID);
         post.setBody(array.get("message").toString());
         post.setAuthor(getUser(Integer.parseInt(array.get("user_id").toString())));
@@ -746,6 +785,7 @@ public class XenForo extends Script {
         return post;
     }
 
+    @Override
     public void updatePost(Post post) throws SQLException {
         HashMap<String, Object> data = new HashMap<String, Object>();
         data.put("thread_id", post.getThreadID());
@@ -760,6 +800,7 @@ public class XenForo extends Script {
         data.clear();
     }
 
+    @Override
     public void createPost(Post post) throws SQLException {
         int ipID = this.insertIP(post.getAuthor(), "post", "insert");
         HashMap<String, Object> data = new HashMap<String, Object>();
@@ -811,31 +852,36 @@ public class XenForo extends Script {
         data.clear();
     }
 
+    @Override
     public int getThreadCount(String username) {
         return this.getDataManager().getCount("thread", "`user_id` = '" + getUserID(username) + "'");
     }
 
+    @Override
     public int getTotalThreadCount() {
         return this.getDataManager().getCount("thread");
     }
 
+    @Override
     public Thread getLastThread() {
         return getThread(this.getDataManager().getIntegerField("SELECT `thread_id` FROM `" + this.getDataManager().getPrefix() +
                 "thread` ORDER BY `thread_id` ASC LIMIT 1"));
     }
 
+    @Override
     public Thread getLastUserThread(String username) {
         return getThread(this.getDataManager().getIntegerField(
                 "SELECT `thread_id` FROM `" + this.getDataManager().getPrefix() + "thread` WHERE `user_id` = '" +
                         getUserID(username) + "' ORDER BY `thread_id` ASC LIMIT 1"));
     }
 
+    @Override
     public Thread getThread(int threadid) {
         HashMap<String, Object> array = this.getDataManager().getArray(
                 "SELECT * FROM `" + this.getDataManager().getPrefix() + "thread` WHERE `thread_id` = '" + threadid +
                         "' LIMIT 1");
         Thread thread =
-                new Thread(Integer.parseInt(array.get("first_post_id").toString()),
+                new Thread(this, Integer.parseInt(array.get("first_post_id").toString()),
                         Integer.parseInt(array.get("last_post_id").toString()),
                         Integer.parseInt(array.get("thread_id").toString()), Integer.parseInt(array.get("node_id")
                         .toString()));
@@ -858,6 +904,7 @@ public class XenForo extends Script {
         return thread;
     }
 
+    @Override
     public List<Thread> getThreads(int limit) {
         String limitstring = "";
         if (limit > 0) {
@@ -873,6 +920,7 @@ public class XenForo extends Script {
         return threads;
     }
 
+    @Override
     public void updateThread(Thread thread) throws SQLException, UnsupportedFunction {
         HashMap<String, Object> data = new HashMap<String, Object>();
         data.put("node_id", thread.getBoardID());
@@ -900,6 +948,7 @@ public class XenForo extends Script {
         this.getDataManager().updateFields(data, "thread", "`thread_id` = '" + thread.getID() + "'");
     }
 
+    @Override
     public void createThread(Thread thread) throws SQLException, UnsupportedFunction {
         this.insertIP(thread.getAuthor(), "thread", "insert");
         long timestamp = new Date().getTime() / 1000;
@@ -927,7 +976,7 @@ public class XenForo extends Script {
         thread.setID(threadID);
         this.addSearch(thread.getAuthor(), "thread", thread.getBoardID(), thread.getID(),
                 thread.getSubject(), thread.getBody());
-        Post post = new Post(thread.getID(), thread.getBoardID());
+        Post post = new Post(this, thread.getID(), thread.getBoardID());
         post.setAuthor(thread.getAuthor());
         post.setBody(thread.getBody());
         post.setSubject(thread.getSubject());
@@ -939,14 +988,17 @@ public class XenForo extends Script {
         data.clear();
     }
 
+    @Override
     public int getUserCount() {
         return this.getDataManager().getCount("user");
     }
 
+    @Override
     public int getGroupCount() {
         return this.getDataManager().getCount("user_group");
     }
 
+    @Override
     public List<String> getIPs(String username) {
         List<String> ips = new ArrayList<String>();
         List<HashMap<String, Object>> array =
@@ -958,6 +1010,7 @@ public class XenForo extends Script {
         return ips;
     }
 
+    @Override
     public List<Ban> getBans(int limit) {
         String limitstring = "";
         if (limit > 0) {
@@ -968,17 +1021,17 @@ public class XenForo extends Script {
                 this.getDataManager().getArrayList("SELECT * FROM `" + this.getDataManager().getPrefix() +
                         "ban_email` " + limitstring);
         for (HashMap<String, Object> map : array) {
-            bans.add(new Ban(null, map.get("banned_email").toString(), null));
+            bans.add(new Ban(this, null, map.get("banned_email").toString(), null));
         }
         array = this.getDataManager().getArrayList("SELECT * FROM `" + this.getDataManager().getPrefix() +
                 "ip_match` " + limitstring);
         for (HashMap<String, Object> map : array) {
-            bans.add(new Ban(null, null, map.get("ip").toString()));
+            bans.add(new Ban(this, null, null, map.get("ip").toString()));
         }
         array = this.getDataManager().getArrayList("SELECT * FROM `" + this.getDataManager().getPrefix() +
                 "user_ban` " + limitstring);
         for (HashMap<String, Object> map : array) {
-            Ban ban = new Ban(null, null, null);
+            Ban ban = new Ban(this, null, null, null);
             ban.setUserID(Integer.parseInt(map.get("ban_user_id").toString()));
             ban.setReason(map.get("user_reason").toString());
             ban.setStartDate(new Date(Long.parseLong(map.get("ban_date").toString()) * 1000));
@@ -992,19 +1045,23 @@ public class XenForo extends Script {
         return bans;
     }
 
+    @Override
     public void updateBan(Ban ban) {
         /* TODO: Make it possible to update email bans, user and IP bans. */
     }
 
+    @Override
     public void addBan(Ban ban) {
         /* TODO: Make it possible to add email bans, user and IP bans. */
     }
 
+    @Override
     public int getBanCount() {
         return this.getDataManager().getCount("ip_match") + this.getDataManager().getCount("user_ban") +
                 this.getDataManager().getCount("ban_email");
     }
 
+    @Override
     public boolean isBanned(String string) {
         if (CraftCommons.isEmail(string)) {
             if (this.getDataManager().exist("ban_email", "banned_email", string)) {
@@ -1023,6 +1080,7 @@ public class XenForo extends Script {
         return false;
     }
 
+    @Override
     public boolean isRegistered(String username) {
         return this.getDataManager().exist("user", "username", username);
     }

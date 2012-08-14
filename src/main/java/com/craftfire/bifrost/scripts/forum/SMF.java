@@ -1,15 +1,12 @@
 /*
- * This file is part of AuthAPI.
+ * This file is part of Bifrost <http://www.craftfire.com/>.
  *
- * Copyright (c) 2011-2012, CraftFire <http://www.craftfire.com/>
- * AuthAPI is licensed under the GNU Lesser General Public License.
- *
- * AuthAPI is free software: you can redistribute it and/or modify
+ * Bifrost is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * AuthAPI is distributed in the hope that it will be useful,
+ * Bifrost is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
@@ -19,19 +16,30 @@
  */
 package com.craftfire.bifrost.scripts.forum;
 
-import com.craftfire.bifrost.Bifrost;
-import com.craftfire.bifrost.ScriptAPI;
-import com.craftfire.bifrost.classes.*;
+import java.sql.SQLException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Random;
+
+import javax.swing.JTable;
+
+import com.craftfire.bifrost.classes.Ban;
+import com.craftfire.bifrost.classes.Gender;
+import com.craftfire.bifrost.classes.Group;
+import com.craftfire.bifrost.classes.Post;
+import com.craftfire.bifrost.classes.PrivateMessage;
+import com.craftfire.bifrost.classes.Script;
+import com.craftfire.bifrost.classes.ScriptUser;
+import com.craftfire.bifrost.classes.Thread;
+import com.craftfire.bifrost.enums.Scripts;
 import com.craftfire.bifrost.exceptions.UnsupportedFunction;
 import com.craftfire.commons.CraftCommons;
 import com.craftfire.commons.enums.Encryption;
 import com.craftfire.commons.managers.DataManager;
-
-import javax.swing.*;
-import java.sql.SQLException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.*;
 
 //TODO: Convert arrays to use Result class
 public class SMF extends Script {
@@ -39,43 +47,43 @@ public class SMF extends Script {
     private final String shortName = "smf";
     private final String encryption = "sha1";
     private final String[] versionRanges = {"1.1.16", "2.0.2"};
-    private final String userVersion;
     private String currentUsername = null;
     private String membernamefield = "member_name", groupfield = "additional_groups";
 
-    public SMF(ScriptAPI.Scripts script, String version) {
-        super(script, version);
-        this.userVersion = version;
-        if (CraftCommons.inVersionRange(this.versionRanges[0], this.userVersion)) {
+    public SMF(Scripts script, String version, DataManager dataManager) {
+        super(script, version, dataManager);
+        if (CraftCommons.inVersionRange(this.versionRanges[0], this.getVersion())) {
             this.membernamefield = this.membernamefield.replace("_", "");
             this.groupfield = this.groupfield.replace("_", "");
         }
     }
 
+    @Override
     public String[] getVersionRanges() {
         return this.versionRanges;
     }
 
+    @Override
     public String getLatestVersion() {
         return this.versionRanges[1];
     }
 
-    public String getVersion() {
-        return this.userVersion;
-    }
-
+    @Override
     public String getScriptName() {
         return this.scriptName;
     }
 
+    @Override
     public String getScriptShortname() {
         return this.shortName;
     }
 
+    @Override
     public String getEncryption() {
         return this.encryption;
     }
 
+    @Override
     public boolean authenticate(String username, String password) {
         String passwordHash = this.getDataManager().getStringField(
                 "SELECT `passwd` FROM `" + this.getDataManager().getPrefix() + "members` WHERE `" + this.membernamefield +
@@ -83,19 +91,23 @@ public class SMF extends Script {
         return hashPassword(username, password).equals(passwordHash);
     }
 
+    @Override
     public String hashPassword(String username, String password) {
         return CraftCommons.encrypt(Encryption.SHA1, username.toLowerCase() + password);
     }
 
+    @Override
     public ScriptUser getLastRegUser() {
         return getUser(this.getDataManager().getIntegerField("SELECT `id_member` FROM `" + this.getDataManager().getPrefix() +
                 "members` ORDER BY `id_member` ASC LIMIT 1"));
     }
 
+    @Override
     public ScriptUser getUser(String username) {
         return getUser(getUserID(username));
     }
 
+    @Override
     public ScriptUser getUser(int userid) {
         JTable userTable = new JTable(this.getDataManager().resultSetToTableModel(
                 "SELECT * FROM `" + this.getDataManager().getPrefix() + "members` WHERE `id_member` = '" + userid +
@@ -112,7 +124,7 @@ public class SMF extends Script {
             regdate = new Date(Long.parseLong(userTable.getModel().getValueAt(0, 2).toString()) * 1000);
             lastlogin = new Date(Long.parseLong(userTable.getModel().getValueAt(0, 6).toString()) * 1000);
             SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
-            if (CraftCommons.inVersionRange(this.versionRanges[0], this.userVersion)) {
+            if (CraftCommons.inVersionRange(this.versionRanges[0], this.getVersion())) {
                 email = userTable.getModel().getValueAt(0, 14).toString();
                 title = userTable.getModel().getValueAt(0, 34).toString();
                 password = userTable.getModel().getValueAt(0, 13).toString();
@@ -137,7 +149,7 @@ public class SMF extends Script {
                 if (activatedid == 1) {
                     activated = true;
                 }
-            } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.userVersion)) {
+            } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.getVersion())) {
                 email = userTable.getModel().getValueAt(0, 18).toString();
                 title = userTable.getModel().getValueAt(0, 38).toString();
                 password = userTable.getModel().getValueAt(0, 16).toString();
@@ -164,7 +176,7 @@ public class SMF extends Script {
                 }
             }
         }
-        ScriptUser user = new ScriptUser(userid, savedusername, password);
+        ScriptUser user = new ScriptUser(this, userid, savedusername, password);
         user.setPasswordSalt(passwordsalt);
         user.setUserTitle(title);
         user.setNickname(nickname);
@@ -181,9 +193,10 @@ public class SMF extends Script {
         return user;
     }
 
+    @Override
     public void updateUser(ScriptUser user) throws SQLException {
         HashMap<String, Object> data = new HashMap<String, Object>();
-        if (CraftCommons.inVersionRange(this.versionRanges[0], this.userVersion)) {
+        if (CraftCommons.inVersionRange(this.versionRanges[0], this.getVersion())) {
             data.put("membername", user.getUsername());
             data.put("realname", user.getNickname());
             data.put("emailaddress", user.getEmail());
@@ -191,7 +204,7 @@ public class SMF extends Script {
             data.put("memberip2", user.getLastIP());
             data.put("dateregistered", user.getRegDate().getTime() / 1000);
             data.put("lastlogin", user.getLastLogin().getTime() / 1000);
-        } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.userVersion)) {
+        } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.getVersion())) {
             data.put("member_name", user.getUsername());
             data.put("real_name", user.getNickname());
             data.put("email_address", user.getEmail());
@@ -222,6 +235,7 @@ public class SMF extends Script {
         data.clear();
     }
 
+    @Override
     public void createUser(ScriptUser user) throws SQLException {
         if (isRegistered(user.getUsername())) {
             return;
@@ -235,14 +249,14 @@ public class SMF extends Script {
         user.setLastLogin(new Date());
         data.put(this.membernamefield, user.getUsername());
         data.put("passwd", user.getPassword());
-        if (CraftCommons.inVersionRange(this.versionRanges[0], this.userVersion)) {
+        if (CraftCommons.inVersionRange(this.versionRanges[0], this.getVersion())) {
             data.put("dateregistered", user.getRegDate().getTime() / 1000);
             data.put("realname", user.getUsername());
             data.put("emailaddress", user.getEmail());
             data.put("memberip", user.getRegIP());
             data.put("memberip2", user.getLastIP());
             data.put("passwordsalt", user.getPasswordSalt());
-        } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.userVersion)) {
+        } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.getVersion())) {
             data.put("date_registered", user.getRegDate().getTime() / 1000);
             data.put("real_name", user.getUsername());
             data.put("email_address", user.getEmail());
@@ -268,12 +282,14 @@ public class SMF extends Script {
                 " value + 1 WHERE `variable` = 'totalMembers'");
     }
 
+    @Override
     public String getUsername(int userid) {
         return this.getDataManager().getStringField(
                 "SELECT `" + this.membernamefield + "` FROM `" + this.getDataManager().getPrefix() +
                         "members` WHERE `id_member` = '" + userid + "'");
     }
 
+    @Override
     public int getUserID(String username) {
         return this.getDataManager().getIntegerField(
                 "SELECT `id_member` FROM `" + this.getDataManager().getPrefix() + "members` WHERE `" + this
@@ -281,6 +297,7 @@ public class SMF extends Script {
                         "` = '" + username + "'");
     }
 
+    @Override
     public List<Group> getGroups(int limit) {
         String limitstring = "";
         if (limit > 0) {
@@ -296,11 +313,13 @@ public class SMF extends Script {
         return groups;
     }
 
+    @Override
     public int getGroupID(String group) {
         /*TODO*/
         return 0;
     }
 
+    @Override
     public Group getGroup(int groupid) {
         JTable groupTable = new JTable(this.getDataManager().resultSetToTableModel(
                 "SELECT * FROM `" + this.getDataManager().getPrefix() + "membergroups` WHERE `id_group` = '" + groupid +
@@ -310,7 +329,7 @@ public class SMF extends Script {
         if (groupTable.getRowCount() == 1) {
             groupid = Integer.parseInt(groupTable.getModel().getValueAt(0, 0).toString());
             groupname = groupTable.getModel().getValueAt(0, 1).toString();
-            if (! CraftCommons.inVersionRange(this.versionRanges[0], this.userVersion)) {
+            if (! CraftCommons.inVersionRange(this.versionRanges[0], this.getVersion())) {
                 groupdescription = groupTable.getModel().getValueAt(0, 2).toString();
             }
             JTable userTable = new JTable(this.getDataManager().resultSetToTableModel(
@@ -324,7 +343,7 @@ public class SMF extends Script {
             }
         }
         this.currentUsername = null;
-        Group group = new Group(groupid, groupname);
+        Group group = new Group(this, groupid, groupname);
         group.setDescription(groupdescription);
         group.setUserCount(this.getDataManager().getIntegerField(
                 "SELECT COUNT(*) FROM `" + this.getDataManager().getPrefix() + "members` WHERE `id_group` = '" + groupid +
@@ -333,11 +352,13 @@ public class SMF extends Script {
         return group;
     }
 
+    @Override
     public Group getGroup(String group) {
         /* TODO */
         return null;
     }
 
+    @Override
     public List<Group> getUserGroups(String username) {
         this.currentUsername = username;
         JTable userTable = new JTable(this.getDataManager().resultSetToTableModel(
@@ -363,22 +384,24 @@ public class SMF extends Script {
         return groups;
     }
 
+    @Override
     public void updateGroup(Group group) throws SQLException {
         HashMap<String, Object> data = new HashMap<String, Object>();
-        if (CraftCommons.inVersionRange(this.versionRanges[0], this.userVersion)) {
+        if (CraftCommons.inVersionRange(this.versionRanges[0], this.getVersion())) {
             data.put("groupname", group.getName());
-        } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.userVersion)) {
+        } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.getVersion())) {
             data.put("group_name", group.getName());
             data.put("description", group.getDescription());
         }
         this.getDataManager().updateFields(data, "membergroups", "`id_group` = '" + group.getID() + "'");
     }
 
+    @Override
     public void createGroup(Group group) throws SQLException {
         HashMap<String, Object> data = new HashMap<String, Object>();
-        if (CraftCommons.inVersionRange(this.versionRanges[0], this.userVersion)) {
+        if (CraftCommons.inVersionRange(this.versionRanges[0], this.getVersion())) {
             data.put("groupName", group.getName());
-        } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.userVersion)) {
+        } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.getVersion())) {
             data.put("group_name", group.getName());
             data.put("description", group.getDescription());
         }
@@ -386,6 +409,7 @@ public class SMF extends Script {
         group.setID(this.getDataManager().getLastID("id_group", "membergroups"));
     }
 
+    @Override
     public PrivateMessage getPM(int pmid) {
         PrivateMessage pm = new PrivateMessage(this, pmid);
         HashMap<String, Object> array = this.getDataManager().getArray(
@@ -396,13 +420,13 @@ public class SMF extends Script {
             pm.setBody(array.get("body").toString());
             pm.setSubject(array.get("subject").toString());
             pm.setSender(getUser(Integer.parseInt(array.get("id_member_from").toString())));
-            if (CraftCommons.inVersionRange(this.versionRanges[0], this.userVersion)) {
+            if (CraftCommons.inVersionRange(this.versionRanges[0], this.getVersion())) {
                 if (array.get("deleted_by_sender").toString().equalsIgnoreCase("0")) {
                     pm.setDeletedBySender(false);
                 } else {
                     pm.setDeletedBySender(true);
                 }
-            } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.userVersion)) {
+            } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.getVersion())) {
                 if (array.get("deletedbysender").toString().equalsIgnoreCase("0")) {
                     pm.setDeletedBySender(false);
                 } else {
@@ -426,7 +450,7 @@ public class SMF extends Script {
                 } else {
                     pm.setRead(recipient, true);
                 }
-                if (! CraftCommons.inVersionRange(this.versionRanges[1], this.userVersion)) {
+                if (! CraftCommons.inVersionRange(this.versionRanges[1], this.getVersion())) {
                     if (map.get("is_new").toString().equalsIgnoreCase("0")) {
                         pm.setNew(recipient, false);
                     } else {
@@ -439,6 +463,7 @@ public class SMF extends Script {
         return pm;
     }
 
+    @Override
     public List<PrivateMessage> getPMsSent(String username, int limit) {
         String limitstring = "";
         if (limit > 0) {
@@ -454,6 +479,7 @@ public class SMF extends Script {
         return pms;
     }
 
+    @Override
     public List<PrivateMessage> getPMsReceived(String username, int limit) {
         String limitstring = "";
         if (limit > 0) {
@@ -469,18 +495,21 @@ public class SMF extends Script {
         return pms;
     }
 
+    @Override
     public int getPMSentCount(String username) {
         return this.getDataManager().getIntegerField("SELECT COUNT(*) FROM `" + this.getDataManager().getPrefix() +
                 "personal_messages` WHERE `id_member_from` = '" + getUserID(username) +
                 "'");
     }
 
+    @Override
     public int getPMReceivedCount(String username) {
         return this.getDataManager().getIntegerField(
                 "SELECT COUNT(*) FROM `" + this.getDataManager().getPrefix() + "pm_recipients` WHERE `id_member` = '" +
                         getUserID(username) + "'");
     }
 
+    @Override
     public void updatePrivateMessage(PrivateMessage pm) throws SQLException {
         String temp;
         HashMap<String, Object> data = new HashMap<String, Object>();
@@ -490,10 +519,10 @@ public class SMF extends Script {
         } else {
             temp = "0";
         }
-        if (CraftCommons.inVersionRange(this.versionRanges[0], this.userVersion)) {
+        if (CraftCommons.inVersionRange(this.versionRanges[0], this.getVersion())) {
             data.put("deletedbysender", temp);
             data.put("fromname", pm.getSender().getUsername());
-        } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.userVersion)) {
+        } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.getVersion())) {
             data.put("deleted_by_sender", temp);
             data.put("from_name", pm.getSender().getUsername());
         }
@@ -517,7 +546,7 @@ public class SMF extends Script {
                 temp = "0";
             }
             data.put("deleted", temp);
-            if (! CraftCommons.inVersionRange(this.versionRanges[0], this.userVersion)) {
+            if (! CraftCommons.inVersionRange(this.versionRanges[0], this.getVersion())) {
                 if (pm.isNew(recipient)) {
                     temp = "1";
                 } else {
@@ -532,6 +561,7 @@ public class SMF extends Script {
         data.clear();
     }
 
+    @Override
     public void createPrivateMessage(PrivateMessage pm) throws SQLException {
         HashMap<String, Object> data = new HashMap<String, Object>();
         pm.setDate(new Date());
@@ -540,13 +570,13 @@ public class SMF extends Script {
         data.put("msgtime", pm.getDate().getTime() / 1000);
         data.put("subject", pm.getSubject());
         data.put("body", pm.getBody());
-        if (CraftCommons.inVersionRange(this.versionRanges[0], this.userVersion)) {
+        if (CraftCommons.inVersionRange(this.versionRanges[0], this.getVersion())) {
             if (! pm.isDeletedBySender()) {
                 temp = 0;
             }
             data.put("deletedbysender", temp);
             data.put("fromname", pm.getSender().getUsername());
-        } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.userVersion)) {
+        } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.getVersion())) {
             if (! pm.isDeletedBySender()) {
                 temp = 0;
             }
@@ -555,7 +585,7 @@ public class SMF extends Script {
         }
         this.getDataManager().insertFields(data, "personal_messages");
         pm.setID(this.getDataManager().getLastID("id_pm", "personal_messages"));
-        if (! CraftCommons.inVersionRange(this.versionRanges[0], this.userVersion)) {
+        if (! CraftCommons.inVersionRange(this.versionRanges[0], this.getVersion())) {
             data = new HashMap<String, Object>();
             data.put("id_pm_head", pm.getID());
             this.getDataManager().updateFields(data, "personal_messages", "`id_pm` = '" + pm.getID() + "'");
@@ -574,7 +604,7 @@ public class SMF extends Script {
                 temp = 1;
             }
             data.put("deleted", temp);
-            if (! CraftCommons.inVersionRange(this.versionRanges[0], this.userVersion)) {
+            if (! CraftCommons.inVersionRange(this.versionRanges[0], this.getVersion())) {
                 temp = 0;
                 if (pm.isNew(recipient)) {
                     temp = 1;
@@ -586,16 +616,19 @@ public class SMF extends Script {
         data.clear();
     }
 
+    @Override
     public int getTotalPostCount() {
         return this.getDataManager().getIntegerField("SELECT COUNT(*) FROM `" + this.getDataManager().getPrefix() + "messages`");
     }
 
+    @Override
     public int getPostCount(String username) {
         return this.getDataManager().getIntegerField(
                 "SELECT `posts` FROM `" + this.getDataManager().getPrefix() + "members` WHERE `" + this.membernamefield +
                         "` = '" + username + "'");
     }
 
+    @Override
     public Post getPost(int postid) {
         JTable postTable = new JTable(this.getDataManager().resultSetToTableModel(
                 "SELECT * FROM `" + this.getDataManager().getPrefix() + "messages` WHERE `id_msg` = '" + postid +
@@ -611,7 +644,7 @@ public class SMF extends Script {
             subject = postTable.getModel().getValueAt(0, 6).toString();
             body = postTable.getModel().getValueAt(0, 13).toString();
         }
-        Post post = new Post(postid, threadid, boardid);
+        Post post = new Post(this, postid, threadid, boardid);
         post.setPostDate(postdate);
         post.setAuthor(getUser(authorid));
         post.setSubject(subject);
@@ -619,6 +652,7 @@ public class SMF extends Script {
         return post;
     }
 
+    @Override
     public Post getLastUserPost(String username) {
         int userid = getUserID(username);
         return getPost(this.getDataManager().getIntegerField(
@@ -626,11 +660,13 @@ public class SMF extends Script {
                         "' ORDER BY `id_msg` ASC LIMIT 1"));
     }
 
+    @Override
     public Post getLastPost() {
         return getPost(this.getDataManager().getIntegerField(
                 "SELECT `id_msg` FROM `" + this.getDataManager().getPrefix() + "messages` ORDER BY `id_msg` ASC LIMIT 1"));
     }
 
+    @Override
     public List<Post> getPosts(int limit) {
         String limitstring = "";
         if (limit > 0) {
@@ -646,6 +682,7 @@ public class SMF extends Script {
         return posts;
     }
 
+    @Override
     public List<Post> getPostsFromThread(int threadid, int limit) {
         String limitstring = "";
         if (limit > 0) {
@@ -661,6 +698,7 @@ public class SMF extends Script {
         return posts;
     }
 
+    @Override
     public void updatePost(Post post) throws SQLException {
         HashMap<String, Object> data = new HashMap<String, Object>();
         data.put("id_topic", post.getThreadID());
@@ -668,12 +706,12 @@ public class SMF extends Script {
         data.put("id_member", post.getAuthor().getID());
         data.put("subject", post.getSubject());
         data.put("body", post.getBody());
-        if (CraftCommons.inVersionRange(this.versionRanges[0], this.userVersion)) {
+        if (CraftCommons.inVersionRange(this.versionRanges[0], this.getVersion())) {
             data.put("postertime", post.getPostDate().getTime() / 1000);
             data.put("postername", post.getAuthor().getUsername());
             data.put("posteremail", post.getAuthor().getEmail());
             data.put("posterip", post.getAuthor().getLastIP());
-        } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.userVersion)) {
+        } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.getVersion())) {
             data.put("poster_time", post.getPostDate().getTime() / 1000);
             data.put("poster_name", post.getAuthor().getUsername());
             data.put("poster_email", post.getAuthor().getEmail());
@@ -682,6 +720,7 @@ public class SMF extends Script {
         this.getDataManager().updateFields(data, "messages", "`id_msg` = '" + post.getID() + "'");
     }
 
+    @Override
     public void createPost(Post post) throws SQLException {
         HashMap<String, Object> data = new HashMap<String, Object>();
         post.setPostDate(new Date());
@@ -691,12 +730,12 @@ public class SMF extends Script {
         data.put("subject", post.getSubject());
         data.put("body", post.getBody());
 
-        if (CraftCommons.inVersionRange(this.versionRanges[0], this.userVersion)) {
+        if (CraftCommons.inVersionRange(this.versionRanges[0], this.getVersion())) {
             data.put("postertime", post.getPostDate().getTime() / 1000);
             data.put("postername", post.getAuthor().getUsername());
             data.put("posteremail", post.getAuthor().getEmail());
             data.put("posterip", post.getAuthor().getLastIP());
-        } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.userVersion)) {
+        } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.getVersion())) {
             data.put("poster_time", post.getPostDate().getTime() / 1000);
             data.put("poster_name", post.getAuthor().getUsername());
             data.put("poster_email", post.getAuthor().getEmail());
@@ -715,11 +754,11 @@ public class SMF extends Script {
         data.put("id_last_msg", post.getID());
         data.put("id_member_updated", post.getAuthor().getID());
         this.getDataManager().updateFields(data, "topics", "`id_topic` = '" + post.getThreadID() + "'");
-        if (CraftCommons.inVersionRange(this.versionRanges[0], this.userVersion)) {
+        if (CraftCommons.inVersionRange(this.versionRanges[0], this.getVersion())) {
             this.getDataManager().executeQueryVoid(
                     "UPDATE `" + this.getDataManager().getPrefix() + "topics" + "` SET `numreplies` =" +
                             " numreplies + 1 WHERE `id_topic` = '" + post.getThreadID() + "'");
-        } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.userVersion)) {
+        } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.getVersion())) {
             this.getDataManager().executeQueryVoid(
                     "UPDATE `" + this.getDataManager().getPrefix() + "topics" + "` SET `num_replies` =" +
                             " num_replies + 1 WHERE `id_topic` = '" + post.getThreadID() + "'");
@@ -730,21 +769,23 @@ public class SMF extends Script {
                 "UPDATE `" + this.getDataManager().getPrefix() + "boards" + "` SET `id_last_msg` =" +
                         " '" + post.getID() + "', `id_msg_updated` = '" + post.getID() + "' WHERE `id_board` = '" +
                         post.getBoardID() + "'");
-        if (CraftCommons.inVersionRange(this.versionRanges[0], this.userVersion)) {
+        if (CraftCommons.inVersionRange(this.versionRanges[0], this.getVersion())) {
             this.getDataManager().executeQueryVoid(
                     "UPDATE `" + this.getDataManager().getPrefix() + "boards" + "` SET `numposts` =" +
                             " numposts + 1 WHERE `id_board` = '" + post.getBoardID() + "'");
-        } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.userVersion)) {
+        } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.getVersion())) {
             this.getDataManager().executeQueryVoid(
                     "UPDATE `" + this.getDataManager().getPrefix() + "boards" + "` SET `num_posts` =" +
                             " num_posts + 1 WHERE `id_board` = '" + post.getBoardID() + "'");
         }
     }
 
+    @Override
     public int getTotalThreadCount() {
         return this.getDataManager().getIntegerField("SELECT COUNT(*) FROM `" + this.getDataManager().getPrefix() + "topics`");
     }
 
+    @Override
     public int getThreadCount(String username) {
         int userid = getUserID(username);
         return this.getDataManager().getIntegerField(
@@ -752,12 +793,14 @@ public class SMF extends Script {
                         userid + "'");
     }
 
+    @Override
     public Thread getLastThread() {
         return getThread(this.getDataManager().getIntegerField(
                 "SELECT `id_topic` FROM `" + this.getDataManager().getPrefix() + "topics` ORDER BY `id_topic` ASC LIMIT " +
                         "1"));
     }
 
+    @Override
     public Thread getLastUserThread(String username) {
         int userid = getUserID(username);
         return getThread(this.getDataManager().getIntegerField(
@@ -765,6 +808,7 @@ public class SMF extends Script {
                         userid + "' ORDER BY `id_topic` ASC LIMIT 1"));
     }
 
+    @Override
     public Thread getThread(int threadid) {
         JTable threadTable = new JTable(this.getDataManager().resultSetToTableModel(
                 "SELECT * FROM `" + this.getDataManager().getPrefix() + "topics` WHERE `id_topic` = '" + threadid +
@@ -786,14 +830,14 @@ public class SMF extends Script {
             if (temp > 0) {
                 poll = true;
             }
-            if (CraftCommons.inVersionRange(this.versionRanges[0], this.userVersion)) {
+            if (CraftCommons.inVersionRange(this.versionRanges[0], this.getVersion())) {
                 numreplies = Integer.parseInt(threadTable.getModel().getValueAt(0, 8).toString());
                 numviews = Integer.parseInt(threadTable.getModel().getValueAt(0, 9).toString());
                 temp = Integer.parseInt(threadTable.getModel().getValueAt(0, 10).toString());
                 if (temp > 0) {
                     locked = true;
                 }
-            } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.userVersion)) {
+            } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.getVersion())) {
                 numreplies = Integer.parseInt(threadTable.getModel().getValueAt(0, 10).toString());
                 numviews = Integer.parseInt(threadTable.getModel().getValueAt(0, 11).toString());
                 temp = Integer.parseInt(threadTable.getModel().getValueAt(0, 12).toString());
@@ -810,7 +854,7 @@ public class SMF extends Script {
                 body = postTable.getModel().getValueAt(0, 13).toString();
             }
         }
-        Thread thread = new Thread(firstpostid, lastpostid, threadid, boardid);
+        Thread thread = new Thread(this, firstpostid, lastpostid, threadid, boardid);
         thread.setViews(numviews);
         thread.setReplies(numreplies);
         thread.setLocked(locked);
@@ -823,6 +867,7 @@ public class SMF extends Script {
         return thread;
     }
 
+    @Override
     public List<Thread> getThreads(int limit) {
         String limitstring = "";
         if (limit > 0) {
@@ -838,6 +883,7 @@ public class SMF extends Script {
         return threads;
     }
 
+    @Override
     public void updateThread(Thread thread) throws SQLException, UnsupportedFunction {
         String temp;
         HashMap<String, Object> data = new HashMap<String, Object>();
@@ -851,7 +897,7 @@ public class SMF extends Script {
             temp = "0";
         }
         data.put("id_poll", temp);
-        if (CraftCommons.inVersionRange(this.versionRanges[0], this.userVersion)) {
+        if (CraftCommons.inVersionRange(this.versionRanges[0], this.getVersion())) {
             if (thread.isSticky()) {
                 temp = "1";
             } else {
@@ -860,7 +906,7 @@ public class SMF extends Script {
             data.put("issticky", temp);
             data.put("numreplies", thread.getReplies());
             data.put("numviews", thread.getViews());
-        } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.userVersion)) {
+        } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.getVersion())) {
             if (thread.isSticky()) {
                 temp = "1";
             } else {
@@ -879,6 +925,7 @@ public class SMF extends Script {
         this.getDataManager().updateFields(data, "topics", "`id_topic` = '" + thread.getID() + "'");
     }
 
+    @Override
     public void createThread(Thread thread) throws SQLException, UnsupportedFunction {
         HashMap<String, Object> data = new HashMap<String, Object>();
         thread.setThreadDate(new Date());
@@ -888,11 +935,11 @@ public class SMF extends Script {
         if (thread.isLocked()) {
             data.put("locked", "1");
         }
-        if (CraftCommons.inVersionRange(this.versionRanges[0], this.userVersion)) {
+        if (CraftCommons.inVersionRange(this.versionRanges[0], this.getVersion())) {
             if (thread.isSticky()) {
                 data.put("issticky", "1");
             }
-        } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.userVersion)) {
+        } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.getVersion())) {
             if (thread.isSticky()) {
                 data.put("is_sticky", "1");
             }
@@ -900,7 +947,7 @@ public class SMF extends Script {
         this.getDataManager().insertFields(data, "topics");
         thread.setID(this.getDataManager().getLastID("id_topic", "topics"));
 
-        Post post = new Post(thread.getID(), thread.getBoardID());
+        Post post = new Post(this, thread.getID(), thread.getBoardID());
         post.setAuthor(thread.getAuthor());
         post.setBody(thread.getBody());
         post.setSubject(thread.getSubject());
@@ -911,14 +958,14 @@ public class SMF extends Script {
         data.put("id_last_msg", post.getID());
         this.getDataManager().updateFields(data, "topics", "`id_topic` = '" + thread.getID() + "'");
 
-        if (CraftCommons.inVersionRange(this.versionRanges[0], this.userVersion)) {
+        if (CraftCommons.inVersionRange(this.versionRanges[0], this.getVersion())) {
             this.getDataManager().executeQueryVoid(
                     "UPDATE `" + this.getDataManager().getPrefix() + "boards" + "` SET `numtopics` =" +
                             " numtopics + 1 WHERE `id_board` = '" + post.getBoardID() + "'");
             this.getDataManager().executeQueryVoid(
                     "UPDATE `" + this.getDataManager().getPrefix() + "topics" + "` SET `numreplies` =" +
                             " '0' WHERE `id_topic` = '" + post.getThreadID() + "'");
-        } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.userVersion)) {
+        } else if (CraftCommons.inVersionRange(this.versionRanges[1], this.getVersion())) {
             this.getDataManager().executeQueryVoid(
                     "UPDATE `" + this.getDataManager().getPrefix() + "boards" + "` SET `num_topics` =" +
                             " num_topics + 1 WHERE `id_board` = '" + post.getBoardID() + "'");
@@ -928,15 +975,18 @@ public class SMF extends Script {
         }
     }
 
+    @Override
     public int getUserCount() {
         return this.getDataManager().getIntegerField("SELECT COUNT(*) FROM `" + this.getDataManager().getPrefix() + "members`");
     }
 
+    @Override
     public int getGroupCount() {
         return this.getDataManager().getIntegerField(
                 "SELECT COUNT(*) FROM `" + this.getDataManager().getPrefix() + "membergroups`");
     }
 
+    @Override
     public List<String> getIPs(String username) {
         List<String> ips = new ArrayList<String>();
         ScriptUser user = getUser(username);
@@ -945,6 +995,7 @@ public class SMF extends Script {
         return ips;
     }
 
+    @Override
     public List<Ban> getBans(int limit) {
         String limitstring = "";
         if (limit > 0) {
@@ -992,7 +1043,7 @@ public class SMF extends Script {
             } else {
                 enddate = new Date(Long.parseLong(banTable.getModel().getValueAt(i, 3).toString()) * 1000);
             }
-            Ban ban = new Ban(banid, username, email, ip);
+            Ban ban = new Ban(this, banid, username, email, ip);
             ban.setReason(reason);
             ban.setNotes(notes);
             ban.setUserID(userid);
@@ -1003,6 +1054,7 @@ public class SMF extends Script {
         return bans;
     }
 
+    @Override
     public void updateBan(Ban ban) throws SQLException {
         HashMap<String, Object> data = new HashMap<String, Object>();
         data.put("name", ban.getName());
@@ -1041,6 +1093,7 @@ public class SMF extends Script {
         }
     }
 
+    @Override
     public void addBan(Ban ban) throws SQLException {
         HashMap<String, Object> data = new HashMap<String, Object>();
         ban.setStartDate(new Date());
@@ -1086,11 +1139,13 @@ public class SMF extends Script {
                 "' WHERE `variable` = 'banLastUpdated'");
     }
 
+    @Override
     public int getBanCount() {
         return this.getDataManager().getIntegerField(
                 "SELECT COUNT(*) FROM `" + this.getDataManager().getPrefix() + "ban_groups`");
     }
 
+    @Override
     public boolean isBanned(String string) {
         if (CraftCommons.isEmail(string)) {
             if (this.getDataManager().getStringField(
@@ -1118,6 +1173,7 @@ public class SMF extends Script {
         return false;
     }
 
+    @Override
     public boolean isRegistered(String username) {
         if (this.getDataManager().getStringField(
                 "SELECT `" + this.membernamefield + "` FROM `" + this.getDataManager().getPrefix() + "members` WHERE `" +

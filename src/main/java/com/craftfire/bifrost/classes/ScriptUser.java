@@ -1,15 +1,15 @@
 /*
- * This file is part of AuthAPI.
+ * This file is part of Bifrost.
  *
  * Copyright (c) 2011-2012, CraftFire <http://www.craftfire.com/>
- * AuthAPI is licensed under the GNU Lesser General Public License.
+ * Bifrost is licensed under the GNU Lesser General Public License.
  *
- * AuthAPI is free software: you can redistribute it and/or modify
+ * Bifrost is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * AuthAPI is distributed in the hope that it will be useful,
+ * Bifrost is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
@@ -19,16 +19,17 @@
  */
 package com.craftfire.bifrost.classes;
 
-import com.craftfire.bifrost.Bifrost;
-import com.craftfire.bifrost.enums.CacheGroup;
-import com.craftfire.bifrost.exceptions.UnsupportedFunction;
-import com.craftfire.commons.CraftCommons;
-
 import java.awt.Image;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+
+import com.craftfire.bifrost.Bifrost;
+import com.craftfire.bifrost.ScriptHandle;
+import com.craftfire.bifrost.enums.CacheGroup;
+import com.craftfire.bifrost.exceptions.UnsupportedFunction;
+import com.craftfire.commons.CraftCommons;
 
 public class ScriptUser implements ScriptUserInterface {
     private int userid;
@@ -38,14 +39,17 @@ public class ScriptUser implements ScriptUserInterface {
             statusmessage, avatarurl, profileurl, regip, lastip;
     private boolean activated;
     private List<Group> groups = new ArrayList<Group>();
+    private final Script script;
 
-    public ScriptUser(int userid, String username, String password) {
+    public ScriptUser(Script script, int userid, String username, String password) {
+        this.script = script;
         this.username = username;
         this.userid = userid;
         this.password = password;
     }
 
-    public ScriptUser(String username, String password) {
+    public ScriptUser(Script script, String username, String password) {
+        this.script = script;
         this.username = username;
         this.password = password;
     }
@@ -142,18 +146,8 @@ public class ScriptUser implements ScriptUserInterface {
 
     @Override
     @SuppressWarnings("unchecked")
-    //TODO
-    public List<Group> getGroups() throws UnsupportedFunction, SQLException {
-        List<Group> temp;
-        if (this.groups.size() > 0) {
-            return this.groups;
-        } else if (Cache.contains(CacheGroup.USER_GROUP, getID())) {
-            temp = (List<Group>) Cache.get(CacheGroup.USER_GROUP, getID());
-        } else {
-            temp = Bifrost.getInstance().getScriptAPI().getUserGroups(this.username);
-            Cache.put(CacheGroup.USER_GROUP, this.userid, temp);
-        }
-        return temp;
+    public List<Group> getGroups() throws UnsupportedFunction {
+        return Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).getUserGroups(this.username);
     }
 
     @Override
@@ -278,43 +272,43 @@ public class ScriptUser implements ScriptUserInterface {
 
     @Override
     public List<PrivateMessage> getPMsSent(int limit) throws UnsupportedFunction {
-        return Bifrost.getInstance().getScriptAPI().getPMsSent(this.username, limit);
+        return Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).getPMsSent(this.username, limit);
     }
 
     @Override
     public List<PrivateMessage> getPMsReceived(int limit) throws UnsupportedFunction {
-        return Bifrost.getInstance().getScriptAPI().getPMsReceived(this.username, limit);
+        return Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).getPMsReceived(this.username, limit);
     }
 
     @Override
     public int getPMSentCount() throws UnsupportedFunction {
-        return Bifrost.getInstance().getScriptAPI().getPMSentCount(this.username);
+        return Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).getPMSentCount(this.username);
     }
 
     @Override
     public int getPMReceivedCount() throws UnsupportedFunction {
-        return Bifrost.getInstance().getScriptAPI().getPMReceivedCount(this.username);
+        return Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).getPMReceivedCount(this.username);
     }
 
     @Override
     public int getPostCount() throws UnsupportedFunction {
-        return Bifrost.getInstance().getScriptAPI().getPostCount(this.username);
+        return Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).getPostCount(this.username);
     }
 
     @Override
     public int getThreadCount() throws UnsupportedFunction {
-        return Bifrost.getInstance().getScriptAPI().getThreadCount(this.username);
+        return Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).getThreadCount(this.username);
     }
 
     @Override
     public boolean isBanned() throws UnsupportedFunction {
-        if (Bifrost.getInstance().getScriptAPI().isBanned(this.username)) {
+        if (Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).isBanned(this.username)) {
             return true;
-        } else if (Bifrost.getInstance().getScriptAPI().isBanned(this.email)) {
+        } else if (Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).isBanned(this.email)) {
             return true;
-        } else if (Bifrost.getInstance().getScriptAPI().isBanned(this.lastip)) {
+        } else if (Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).isBanned(this.lastip)) {
             return true;
-        } else if (Bifrost.getInstance().getScriptAPI().isBanned(this.regip)) {
+        } else if (Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).isBanned(this.regip)) {
             return true;
         } else {
             return false;
@@ -323,50 +317,47 @@ public class ScriptUser implements ScriptUserInterface {
 
     @Override
     public boolean isRegistered() throws UnsupportedFunction {
-        return Bifrost.getInstance().getScriptAPI().isRegistered(this.username);
+        return Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).isRegistered(this.username);
     }
 
     @Override
     public List<String> getIPs() throws UnsupportedFunction {
-        return Bifrost.getInstance().getScriptAPI().getIPs(this.username);
+        return Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).getIPs(this.username);
     }
 
     @Override
     public Thread getLastThread() throws UnsupportedFunction {
-        return Bifrost.getInstance().getScriptAPI().getLastUserThread(this.username);
+        return Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).getLastUserThread(this.username);
     }
 
     @Override
     public Post getLastPost() throws UnsupportedFunction {
-        return Bifrost.getInstance().getScriptAPI().getLastUserPost(this.username);
+        return Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).getLastUserPost(this.username);
     }
 
     @Override
     public void updateUser() throws SQLException, UnsupportedFunction {
-        Bifrost.getInstance().getScriptAPI().updateUser(this);
+        Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).updateUser(this);
     }
 
     @Override
     public void createUser() throws SQLException, UnsupportedFunction {
-        Bifrost.getInstance().getScriptAPI().createUser(this);
+        Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).createUser(this);
     }
 
-    public static boolean hasCache(Object id) {
-        return Cache.contains(CacheGroup.USER, id);
+    public static boolean hasCache(ScriptHandle handle, Object id) {
+        return handle.getCache().contains(CacheGroup.USER, id);
     }
 
-    public static void addCache(ScriptUser scriptUser) {
-        if (scriptUser == null) {
-            return;
-        }
-        Cache.put(CacheGroup.USER, scriptUser.getID(), scriptUser);
+    public static void addCache(ScriptHandle handle, ScriptUser scriptUser) {
+        handle.getCache().put(CacheGroup.USER, scriptUser.getID(), scriptUser);
     }
 
     @SuppressWarnings("unchecked")
-    public static ScriptUser getCache(Object id) {
+    public static ScriptUser getCache(ScriptHandle handle, Object id) {
         ScriptUser temp = null;
-        if (Cache.contains(CacheGroup.USER, id)) {
-            temp = (ScriptUser) Cache.get(CacheGroup.USER, id);
+        if (handle.getCache().contains(CacheGroup.USER, id)) {
+            temp = (ScriptUser) handle.getCache().get(CacheGroup.USER, id);
         }
         return temp;
     }

@@ -1,15 +1,15 @@
 /*
- * This file is part of AuthAPI.
+ * This file is part of Bifrost.
  *
  * Copyright (c) 2011-2012, CraftFire <http://www.craftfire.com/>
- * AuthAPI is licensed under the GNU Lesser General Public License.
+ * Bifrost is licensed under the GNU Lesser General Public License.
  *
- * AuthAPI is free software: you can redistribute it and/or modify
+ * Bifrost is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * AuthAPI is distributed in the hope that it will be useful,
+ * Bifrost is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
@@ -23,6 +23,7 @@ import java.sql.SQLException;
 import java.util.Date;
 
 import com.craftfire.bifrost.Bifrost;
+import com.craftfire.bifrost.ScriptHandle;
 import com.craftfire.bifrost.enums.CacheGroup;
 import com.craftfire.bifrost.exceptions.UnsupportedFunction;
 
@@ -32,14 +33,17 @@ public class Post implements PostInterface {
     private int postid;
     private final int threadid, boardid;
     private Date postdate;
+    private final Script script;
 
-    public Post(int postid, int threadid, int boardid) {
+    public Post(Script script, int postid, int threadid, int boardid) {
+        this.script = script;
         this.postid = postid;
         this.threadid = threadid;
         this.boardid = boardid;
     }
 
-    public Post(int threadid, int boardid) {
+    public Post(Script script, int threadid, int boardid) {
+        this.script = script;
         this.threadid = threadid;
         this.boardid = boardid;
     }
@@ -66,7 +70,7 @@ public class Post implements PostInterface {
 
     @Override
     public Thread getThread() throws UnsupportedFunction {
-        return Bifrost.getInstance().getScriptAPI().getThread(this.threadid);
+        return Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).getThread(this.threadid);
     }
 
     @Override
@@ -111,30 +115,27 @@ public class Post implements PostInterface {
 
     @Override
     public void updatePost() throws SQLException, UnsupportedFunction {
-        Bifrost.getInstance().getScriptAPI().updatePost(this);
+        Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).updatePost(this);
     }
 
     @Override
     public void createPost() throws SQLException, UnsupportedFunction {
-        Bifrost.getInstance().getScriptAPI().createPost(this);
+        Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).createPost(this);
     }
 
-    public static boolean hasCache(Object id) {
-        return Cache.contains(CacheGroup.POST, id);
+    public static boolean hasCache(ScriptHandle handle, Object id) {
+        return handle.getCache().contains(CacheGroup.POST, id);
     }
 
-    public static void addCache(Post post) {
-        if (post == null) {
-            return;
-        }
-        Cache.put(CacheGroup.POST, post.getID(), post);
+    public static void addCache(ScriptHandle handle, Post post) {
+        handle.getCache().put(CacheGroup.POST, post.getID(), post);
     }
 
     @SuppressWarnings("unchecked")
-    public static Post getCache(Object id) {
+    public static Post getCache(ScriptHandle handle, Object id) {
         Post temp = null;
-        if (Cache.contains(CacheGroup.POST, id)) {
-            temp = (Post) Cache.get(CacheGroup.POST, id);
+        if (handle.getCache().contains(CacheGroup.POST, id)) {
+            temp = (Post) handle.getCache().get(CacheGroup.POST, id);
         }
         return temp;
     }

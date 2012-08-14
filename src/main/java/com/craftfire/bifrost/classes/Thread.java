@@ -1,15 +1,15 @@
 /*
- * This file is part of AuthAPI.
+ * This file is part of Bifrost.
  *
  * Copyright (c) 2011-2012, CraftFire <http://www.craftfire.com/>
- * AuthAPI is licensed under the GNU Lesser General Public License.
+ * Bifrost is licensed under the GNU Lesser General Public License.
  *
- * AuthAPI is free software: you can redistribute it and/or modify
+ * Bifrost is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * AuthAPI is distributed in the hope that it will be useful,
+ * Bifrost is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
@@ -24,6 +24,7 @@ import java.util.Date;
 import java.util.List;
 
 import com.craftfire.bifrost.Bifrost;
+import com.craftfire.bifrost.ScriptHandle;
 import com.craftfire.bifrost.enums.CacheGroup;
 import com.craftfire.bifrost.exceptions.UnsupportedFunction;
 
@@ -32,11 +33,13 @@ public class Thread implements ThreadInterface {
     private String subject, body;
     private int firstpostid, lastpostid, threadid;
     private final int boardid;
+    private final Script script;
     private int threadviews, threadreplies;
     private Date threaddate;
     private boolean locked, poll, sticky;
 
-    public Thread(int firstpostid, int lastpostid, int threadid, int boardid) {
+    public Thread(Script script, int firstpostid, int lastpostid, int threadid, int boardid) {
+        this.script = script;
         this.firstpostid = firstpostid;
         this.lastpostid = lastpostid;
         this.threadid = threadid;
@@ -44,6 +47,7 @@ public class Thread implements ThreadInterface {
     }
 
     public Thread(Script script, int boardid) {
+        this.script = script;
         this.boardid = boardid;
     }
 
@@ -64,17 +68,18 @@ public class Thread implements ThreadInterface {
 
     @Override
     public List<Post> getPosts(int limit) throws UnsupportedFunction {
-        return Bifrost.getInstance().getScriptAPI().getPostsFromThread(this.threadid, limit);
+        return Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript())
+                                                                            .getPostsFromThread(this.threadid, limit);
     }
 
     @Override
     public Post getFirstPost() throws UnsupportedFunction {
-        return Bifrost.getInstance().getScriptAPI().getPost(this.firstpostid);
+        return Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).getPost(this.firstpostid);
     }
 
     @Override
     public Post getLastPost() throws UnsupportedFunction {
-        return Bifrost.getInstance().getScriptAPI().getPost(this.lastpostid);
+        return Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).getPost(this.lastpostid);
     }
 
     @Override
@@ -169,30 +174,27 @@ public class Thread implements ThreadInterface {
 
     @Override
     public void updateThread() throws SQLException, UnsupportedFunction {
-        Bifrost.getInstance().getScriptAPI().updateThread(this);
+        Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).updateThread(this);
     }
 
     @Override
     public void createThread() throws SQLException, UnsupportedFunction {
-        Bifrost.getInstance().getScriptAPI().createThread(this);
+        Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).createThread(this);
     }
 
-    public static boolean hasCache(Object id) {
-        return Cache.contains(CacheGroup.THREAD, id);
+    public static boolean hasCache(ScriptHandle handle, Object id) {
+        return handle.getCache().contains(CacheGroup.THREAD, id);
     }
 
-    public static void addCache(Thread thread) {
-        if (thread == null) {
-            return;
-        }
-        Cache.put(CacheGroup.THREAD, thread.getID(), thread);
+    public static void addCache(ScriptHandle handle,Thread thread) {
+        handle.getCache().put(CacheGroup.THREAD, thread.getID(), thread);
     }
 
     @SuppressWarnings("unchecked")
-    public static Thread getCache(Object id) {
+    public static Thread getCache(ScriptHandle handle, Object id) {
         Thread temp = null;
-        if (Cache.contains(CacheGroup.THREAD, id)) {
-            temp = (Thread) Cache.get(CacheGroup.THREAD, id);
+        if (handle.getCache().contains(CacheGroup.THREAD, id)) {
+            temp = (Thread) handle.getCache().get(CacheGroup.THREAD, id);
         }
         return temp;
     }

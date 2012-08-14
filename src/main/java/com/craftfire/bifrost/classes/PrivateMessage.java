@@ -1,15 +1,15 @@
 /*
- * This file is part of AuthAPI.
+ * This file is part of Bifrost.
  *
  * Copyright (c) 2011-2012, CraftFire <http://www.craftfire.com/>
- * AuthAPI is licensed under the GNU Lesser General Public License.
+ * Bifrost is licensed under the GNU Lesser General Public License.
  *
- * AuthAPI is free software: you can redistribute it and/or modify
+ * Bifrost is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * AuthAPI is distributed in the hope that it will be useful,
+ * Bifrost is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
@@ -19,14 +19,15 @@
  */
 package com.craftfire.bifrost.classes;
 
-import com.craftfire.bifrost.Bifrost;
-import com.craftfire.bifrost.enums.CacheGroup;
-import com.craftfire.bifrost.exceptions.UnsupportedFunction;
-
 import java.sql.SQLException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+
+import com.craftfire.bifrost.Bifrost;
+import com.craftfire.bifrost.ScriptHandle;
+import com.craftfire.bifrost.enums.CacheGroup;
+import com.craftfire.bifrost.exceptions.UnsupportedFunction;
 
 public class PrivateMessage implements PrivateMessageInterface {
     private int pmid;
@@ -38,12 +39,15 @@ public class PrivateMessage implements PrivateMessageInterface {
     private HashMap<ScriptUser, Boolean> deleted = new HashMap<ScriptUser, Boolean>();
     private Date date;
     private boolean deletedbysender;
+    private final Script script;
 
     public PrivateMessage(Script script, int pmid) {
+        this.script = script;
         this.pmid = pmid;
     }
 
     public PrivateMessage(Script script, ScriptUser sender, List<ScriptUser> recipients) {
+        this.script = script;
         this.sender = sender;
         this.recipients = recipients;
     }
@@ -159,27 +163,27 @@ public class PrivateMessage implements PrivateMessageInterface {
 
     @Override
     public void updatePrivateMessage() throws SQLException, UnsupportedFunction {
-        Bifrost.getInstance().getScriptAPI().updatePrivateMessage(this);
+        Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).updatePrivateMessage(this);
     }
 
     @Override
     public void createPrivateMessage() throws SQLException, UnsupportedFunction {
-        Bifrost.getInstance().getScriptAPI().createPrivateMessage(this);
+        Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).createPrivateMessage(this);
     }
 
-    public static boolean hasCache(Object id) {
-        return Cache.contains(CacheGroup.PM, id);
+    public static boolean hasCache(ScriptHandle handle, Object id) {
+        return handle.getCache().contains(CacheGroup.PM, id);
     }
 
-    public static void addCache(PrivateMessage privateMessage) {
-        Cache.put(CacheGroup.PM, privateMessage.getID(), privateMessage);
+    public static void addCache(ScriptHandle handle, PrivateMessage privateMessage) {
+        handle.getCache().put(CacheGroup.PM, privateMessage.getID(), privateMessage);
     }
 
     @SuppressWarnings("unchecked")
-    public static PrivateMessage getCache(Object id) {
+    public static PrivateMessage getCache(ScriptHandle handle, Object id) {
         PrivateMessage temp = null;
-        if (Cache.contains(CacheGroup.PM, id)) {
-            temp = (PrivateMessage) Cache.get(CacheGroup.PM, id);
+        if (handle.getCache().contains(CacheGroup.PM, id)) {
+            temp = (PrivateMessage) handle.getCache().get(CacheGroup.PM, id);
         }
         return temp;
     }

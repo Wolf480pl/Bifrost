@@ -10,7 +10,6 @@
  * (at your option) any later version.
  *
  * Bifrost is distributed in the hope that it will be useful,
-
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
@@ -18,21 +17,15 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.craftfire.bifrost.exceptions;
+package com.craftfire.bifrost.enums;
 
-public class UnsupportedFunction extends Exception {
-    private String message;
+public enum Scripts {
+    SMF("simplemachines"),
+    XF("xenforo"),
+    WP("wordpress");
 
-    public UnsupportedFunction() {
-        this.message = "This function is not supported by this script.";
-    }
-
-    public UnsupportedFunction(String message) {
-        super(message);
-        this.message = message;
-    }
-    
-    public String getError() {
-        return this.message;
+    public String alias;
+    Scripts(String alias) {
+        this.alias = alias;
     }
 }

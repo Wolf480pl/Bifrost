@@ -1,15 +1,15 @@
 /*
- * This file is part of AuthAPI.
+ * This file is part of Bifrost.
  *
  * Copyright (c) 2011-2012, CraftFire <http://www.craftfire.com/>
- * AuthAPI is licensed under the GNU Lesser General Public License.
+ * Bifrost is licensed under the GNU Lesser General Public License.
  *
- * AuthAPI is free software: you can redistribute it and/or modify
+ * Bifrost is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * AuthAPI is distributed in the hope that it will be useful,
+ * Bifrost is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
@@ -32,17 +32,18 @@ import com.craftfire.bifrost.classes.Ban;
 import com.craftfire.bifrost.classes.Group;
 import com.craftfire.bifrost.classes.Post;
 import com.craftfire.bifrost.classes.PrivateMessage;
-import com.craftfire.bifrost.classes.Script;
 import com.craftfire.bifrost.classes.ScriptUser;
 import com.craftfire.bifrost.classes.Thread;
+import com.craftfire.bifrost.enums.Scripts;
 import com.craftfire.bifrost.exceptions.UnsupportedFunction;
+import com.craftfire.bifrost.exceptions.UnsupportedScript;
 import com.craftfire.bifrost.exceptions.UnsupportedVersion;
 import com.craftfire.commons.enums.DataType;
 import com.craftfire.commons.managers.DataManager;
 
 public class BifrostDebug {
-    static Bifrost authAPI;
-    static ScriptAPI.Scripts script;
+    static Bifrost bifrost;
+    static Scripts script;
     static String version;
     static DataManager dataManager;
     static HashMap<String, String> data = new HashMap<String, String>();
@@ -52,8 +53,8 @@ public class BifrostDebug {
 
     public static void main(String[] args) {
         int count = 1;
-        HashMap<Integer, ScriptAPI.Scripts> scriptsh = new HashMap<Integer, ScriptAPI.Scripts>();
-        for (ScriptAPI.Scripts s : ScriptAPI.Scripts.values()) {
+        HashMap<Integer, Scripts> scriptsh = new HashMap<Integer, Scripts>();
+        for (Scripts s : Scripts.values()) {
             System.out.println("#" + count + " - " + s.toString() + newline);
             scriptsh.put(count, s);
             count++;
@@ -65,7 +66,7 @@ public class BifrostDebug {
         try {
             String s = buf_reader.readLine();
             tmp = Integer.parseInt(s.trim());
-            ScriptAPI.Scripts ss = scriptsh.get(tmp);
+            Scripts ss = scriptsh.get(tmp);
             script = ss;
             System.out.println(newline + "Selected " + ss.toString() + " as script." + newline);
             System.out.println(seperate);
@@ -117,24 +118,27 @@ public class BifrostDebug {
                 timeout = temptimeout;
             }
             dataManager = new DataManager(DataType.MYSQL, data.get("mysql_username"), data.get("mysql_password"));
-			dataManager.setHost(data.get("mysql_host"));
-			dataManager.setPort(port);
-			dataManager.setDatabase(data.get("mysql_database"));
-			dataManager.setPrefix(data.get("mysql_prefix"));
-			dataManager.setTimeout(timeout);
-			dataManager.setKeepAlive(keepalive);
+            dataManager.setHost(data.get("mysql_host"));
+            dataManager.setPort(port);
+            dataManager.setDatabase(data.get("mysql_database"));
+            dataManager.setPrefix(data.get("mysql_prefix"));
+            dataManager.setTimeout(timeout);
+            dataManager.setKeepAlive(keepalive);
             try {
-                authAPI = new Bifrost(script, version, dataManager);
+                bifrost = new Bifrost();
+                bifrost.getScriptAPI().addHandle(script, version, dataManager);
             } catch (UnsupportedVersion unsupportedVersion) {
                 unsupportedVersion.printStackTrace();
+            } catch (UnsupportedScript unsupportedScript) {
+                unsupportedScript.printStackTrace();
             }
             runTests();
         } catch (IOException ioe) {
             System.out.println("IO exception = " + ioe);
         } catch (SQLException e) {
-			e.printStackTrace();
-		}
-	}
+            e.printStackTrace();
+        }
+    }
 
     public static void ask(String name, String key, String defaultvalue) {
         String line = null;
@@ -159,38 +163,38 @@ public class BifrostDebug {
     }
 
     public static void runTests() throws SQLException {
-		try {
-			Random randomGenerator = new Random();
-			int randomInt = randomGenerator.nextInt(1000000);
-			String temp = "";
-			print(seperate);
-			print("DATAMANAGER");
-			print("getDatabase = " + dataManager.getDatabase());
-			print("getHost = " + dataManager.getHost());
-			print("getPassword = " + dataManager.getPassword());
-			print("getPrefix = " + dataManager.getPrefix());
-			print("getUsername = " + dataManager.getUsername());
-			print("getConnection = " + dataManager.getConnection());
-			print("getDataType = " + dataManager.getDataType());
-			print("getPort = " + dataManager.getPort());
-			print("getTimeout = " + dataManager.getTimeout());
-			print("isConnected = " + dataManager.isConnected());
-			print("isKeepAlive = " + dataManager.isKeepAlive());
+        try {
+            Random randomGenerator = new Random();
+            int randomInt = randomGenerator.nextInt(1000000);
+            String temp = "";
+            print(seperate);
+            print("DATAMANAGER");
+            print("getDatabase = " + dataManager.getDatabase());
+            print("getHost = " + dataManager.getHost());
+            print("getPassword = " + dataManager.getPassword());
+            print("getPrefix = " + dataManager.getPrefix());
+            print("getUsername = " + dataManager.getUsername());
+            print("getConnection = " + dataManager.getConnection());
+            print("getDataType = " + dataManager.getDataType());
+            print("getPort = " + dataManager.getPort());
+            print("getTimeout = " + dataManager.getTimeout());
+            print("isConnected = " + dataManager.isConnected());
+            print("isKeepAlive = " + dataManager.isKeepAlive());
 
-			String username = data.get("script_username");
+            String username = data.get("script_username");
 
-			print(seperate);
+            print(seperate);
 
-			print(script.toString() + " - " + version + " - SCRIPT CLASS");
-			Script tscript = authAPI.getScript();
-			printResult("getEncryption", tscript.getEncryption());
-			printResult("getLatestVersion", tscript.getLatestVersion());
-			printResult("getScriptName", tscript.getScriptName());
-			printResult("getScriptShortname", tscript.getScriptShortname());
-			printResult("getVersion", tscript.getVersion());
-			printResult("getForumURL", tscript.getForumURL());
-			printResult("getHomeURL", tscript.getHomeURL());
-			printResult("getLastThread", "" + tscript.getLastThread());
+            print(script.toString() + " - " + version + " - SCRIPT CLASS");
+            ScriptHandle tscript = bifrost.getScriptAPI().getHandle(script);
+            printResult("getEncryption", tscript.getEncryption());
+            printResult("getLatestVersion", tscript.getLatestVersion());
+            printResult("getScriptName", tscript.getScriptName());
+            printResult("getScriptShortname", tscript.getScriptShortname());
+            printResult("getVersion", tscript.getVersion());
+            printResult("getForumURL", tscript.getForumURL());
+            printResult("getHomeURL", tscript.getHomeURL());
+            printResult("getLastThread", "" + tscript.getLastThread());
             try {
                 printResult("getBanCount", "" + tscript.getBanCount());
             } catch (UnsupportedFunction e) {
@@ -201,45 +205,48 @@ public class BifrostDebug {
             } catch (UnsupportedFunction e) {
                 printResult("getBans", "null");
             }
-			printResult("getGroupCount", "" + tscript.getGroupCount());
-			printResult("getGroups", "" + tscript.getGroups(0));
-			printResult("getLastThread", "" + tscript.getLastThread());
-			printResult("getLastPost", "" + tscript.getLastPost());
-			printResult("getLastRegUser", "" + tscript.getLastRegUser());
-			printResult("getTotalPostCount", "" + tscript.getTotalPostCount());
-			printResult("getTotalThreadCount", "" + tscript.getTotalThreadCount());
-			printResult("getThreads", "" + tscript.getThreads(0));
-			printResult("getPosts", "" + tscript.getPosts(0));
-			printResult("getUserCount", "" + tscript.getUserCount());
+            printResult("getGroupCount", "" + tscript.getGroupCount());
+            printResult("getGroups", "" + tscript.getGroups(0));
+            printResult("getLastThread", "" + tscript.getLastThread());
+            printResult("getLastPost", "" + tscript.getLastPost());
+            printResult("getLastRegUser", "" + tscript.getLastRegUser());
+            printResult("getTotalPostCount", "" + tscript.getTotalPostCount());
+            printResult("getTotalThreadCount",
+                    "" + tscript.getTotalThreadCount());
+            printResult("getThreads", "" + tscript.getThreads(0));
+            printResult("getPosts", "" + tscript.getPosts(0));
+            printResult("getUserCount", "" + tscript.getUserCount());
             try {
                 printResult("isBanned", "" + tscript.isBanned("test"));
             } catch (UnsupportedFunction e) {
                 printResult("isBanned", "null");
             }
 
-			print(seperate);
+            print(seperate);
 
-			print(script.toString() + " - " + version + " - USER CLASS - " + username);
-			ScriptUser user = authAPI.getScript().getUser(username);
-			printResult("getAvatarURL", user.getAvatarURL());
-			printResult("getBirthday", "" + user.getBirthday());
-			printResult("getEmail", user.getEmail());
-			printResult("getFirstName", user.getFirstName());
-			printResult("getGender", "" + user.getGender());
+            print(script.toString() + " - " + version + " - USER CLASS - "
+                    + username);
+            ScriptUser user = bifrost.getScriptAPI().getHandle(script)
+                    .getUser(username);
+            printResult("getAvatarURL", user.getAvatarURL());
+            printResult("getBirthday", "" + user.getBirthday());
+            printResult("getEmail", user.getEmail());
+            printResult("getFirstName", user.getFirstName());
+            printResult("getGender", "" + user.getGender());
             try {
                 printResult("getIPs", "" + user.getIPs());
             } catch (UnsupportedFunction e) {
                 printResult("getIPs", "null");
             }
-			printResult("getLastIP", user.getLastIP());
-			printResult("getLastLogin", "" + user.getLastLogin());
-			printResult("getLastPost", "" + user.getLastPost());
-			printResult("getLastThread", "" + user.getLastThread());
-			printResult("getLastName", user.getLastName());
-			printResult("getNickname", user.getNickname());
-			printResult("getProfileURL", user.getProfileURL());
-			printResult("getPassword", user.getPassword());
-			printResult("getPasswordSalt", user.getPasswordSalt());
+            printResult("getLastIP", user.getLastIP());
+            printResult("getLastLogin", "" + user.getLastLogin());
+            printResult("getLastPost", "" + user.getLastPost());
+            printResult("getLastThread", "" + user.getLastThread());
+            printResult("getLastName", user.getLastName());
+            printResult("getNickname", user.getNickname());
+            printResult("getProfileURL", user.getProfileURL());
+            printResult("getPassword", user.getPassword());
+            printResult("getPasswordSalt", user.getPasswordSalt());
             try {
                 printResult("getPMReceivedCount",
                         "" + user.getPMReceivedCount());
@@ -261,114 +268,120 @@ public class BifrostDebug {
             } catch (UnsupportedFunction e) {
                 printResult("getPMsReceived", "null");
             }
-			printResult("getPostCount", "" + user.getPostCount());
-			printResult("getRealName", user.getRealName());
-			printResult("getRegIP", user.getRegIP());
-			printResult("getRegDate", "" + user.getRegDate());
-			printResult("getStatusMessage", user.getStatusMessage());
-			printResult("getThreadCount", "" + user.getThreadCount());
-			printResult("getUsername", user.getUsername());
-			printResult("getUserTitle", user.getUserTitle());
-			printResult("getUserID", "" + user.getID());
-			printResult("getUserGroups", "" + user.getGroups());
-			printResult("isActivated", "" + user.isActivated());
+            printResult("getPostCount", "" + user.getPostCount());
+            printResult("getRealName", user.getRealName());
+            printResult("getRegIP", user.getRegIP());
+            printResult("getRegDate", "" + user.getRegDate());
+            printResult("getStatusMessage", user.getStatusMessage());
+            printResult("getThreadCount", "" + user.getThreadCount());
+            printResult("getUsername", user.getUsername());
+            printResult("getUserTitle", user.getUserTitle());
+            printResult("getUserID", "" + user.getID());
+            printResult("getUserGroups", "" + user.getGroups());
+            printResult("isActivated", "" + user.isActivated());
             try {
                 printResult("isBanned", "" + user.isBanned());
             } catch (UnsupportedFunction e) {
                 printResult("isBanned", "null");
             }
-			printResult("isRegistered", "" + user.isRegistered());
+            printResult("isRegistered", "" + user.isRegistered());
 
-			print(seperate);
+            print(seperate);
 
-			print(script.toString() + " - " + version + " - USER UPDATING");
-			temp = user.getUsername();
-			user.setUsername("Debug");
-			user.setPassword("craftfire");
-			user.updateUser();
-			user.setUsername(temp);
-			user.updateUser();
+            print(script.toString() + " - " + version + " - USER UPDATING");
+            temp = user.getUsername();
+            user.setUsername("Debug");
+            user.setPassword("craftfire");
+            user.updateUser();
+            user.setUsername(temp);
+            user.updateUser();
 
-			print(seperate);
+            print(seperate);
 
-			print(script.toString() + " - " + version + " - USER CREATE");
-			ScriptUser newUser = new ScriptUser("craftfire" + randomInt, "craftfire");
-			newUser.setNickname("testing" + randomInt);
-			newUser.setUserTitle("title");
-			newUser.setRegIP("127.0.0.1");
-			newUser.setLastIP("127.0.0.1");
-			newUser.setEmail("dev@craftfire.com");
-			newUser.createUser();
+            print(script.toString() + " - " + version + " - USER CREATE");
+            ScriptUser newUser = bifrost.getScriptAPI().getHandle(script)
+                    .newScriptUser("craftfire" + randomInt, "craftfire");
+            newUser.setNickname("testing" + randomInt);
+            newUser.setUserTitle("title");
+            newUser.setRegIP("127.0.0.1");
+            newUser.setLastIP("127.0.0.1");
+            newUser.setEmail("dev@craftfire.com");
+            newUser.createUser();
 
-			print(seperate);
+            print(seperate);
 
-			print(script.toString() + " - " + version + " - BAN CLASS");
-			Ban ban = null;
+            print(script.toString() + " - " + version + " - BAN CLASS");
+            Ban ban = null;
             try {
                 if (authAPI.getScript().getBans(1) != null) {
-                    ban = authAPI.getScript().getBans(1).get(0);
+                    ban = bifrost.getScriptAPI().getHandle(script).getBans(1)
+                            .get(0);
                 }
             } catch (UnsupportedFunction e) {
             }
             if (ban != null) {
-			    printResult("getEmail", ban.getEmail());
-	            printResult("getIP", ban.getIP());
-	            printResult("getID", "" + ban.getID());
-	            printResult("getNotes", ban.getNotes());
-	            printResult("getReason", ban.getReason());
-	            printResult("getUsername", ban.getName());
-	            printResult("getEndDate", "" + ban.getEndDate());
-	            printResult("getStartDate", "" + ban.getStartDate());
-	            printResult("getTimeLength", "" + ban.getTimeLength());
-	            printResult("getTimeRemaining", "" + ban.getTimeRemaining());
-	            printResult("getUserID", "" + ban.getUserID());
-	            printResult("isPermanent", "" + ban.isPermanent());
-	        } else {
-	            print("NOT SUPPORTED");
-	        }
-			
-			print(seperate);
+                printResult("getEmail", ban.getEmail());
+                printResult("getIP", ban.getIP());
+                printResult("getID", "" + ban.getID());
+                printResult("getNotes", ban.getNotes());
+                printResult("getReason", ban.getReason());
+                printResult("getUsername", ban.getName());
+                printResult("getEndDate", "" + ban.getEndDate());
+                printResult("getStartDate", "" + ban.getStartDate());
+                printResult("getTimeLength", "" + ban.getTimeLength());
+                printResult("getTimeRemaining", "" + ban.getTimeRemaining());
+                printResult("getUserID", "" + ban.getUserID());
+                printResult("isPermanent", "" + ban.isPermanent());
+            } else {
+                print("NOT SUPPORTED");
+            }
 
-			print(script.toString() + " - " + version + " - BAN UPDATING");
-			if (ban != null) {
-			    temp = ban.getReason();
-			    ban.setReason("Debug");
-			    ban.updateBan();
-			    ban.setReason(temp);
-			    ban.updateBan();
-			} else {
-			    print("NOT SUPPORTED");
-			}
+            print(seperate);
 
-			print(seperate);
+            print(script.toString() + " - " + version + " - BAN UPDATING");
+            if (ban != null) {
+                temp = ban.getReason();
+                ban.setReason("Debug");
+                ban.updateBan();
+                ban.setReason(temp);
+                ban.updateBan();
+            } else {
+                print("NOT SUPPORTED");
+            }
 
-			print(script.toString() + " - " + version + " - BAN CREATE");
-			Ban newBan = new Ban("craftfire-ban-" + randomInt, "dev@craftfire.com", "127.0.0.1");
-			newBan.setNotes("Staff notes");
-			newBan.setReason("Hello world!");
+            print(seperate);
+
+            print(script.toString() + " - " + version + " - BAN CREATE");
+            Ban newBan = bifrost
+                    .getScriptAPI()
+                    .getHandle(script)
+                    .newBan("craftfire-ban-" + randomInt, "dev@craftfire.com",
+                            "127.0.0.1");
+            newBan.setNotes("Staff notes");
+            newBan.setReason("Hello world!");
             try {
                 newBan.addBan();
             } catch (UnsupportedFunction e) {
                 print("NOT SUPPORTED");
             }
 
-			print(seperate);
+            print(seperate);
 
-			print(script.toString() + " - " + version + " - GROUP CLASS");
-			Group group = null;
-			if (user.getGroups() != null) {
-			    group = user.getGroups().get(0);
-	            printResult("getName", group.getName());
-	            printResult("getID", "" + group.getID());
-	            printResult("getDescription", group.getDescription());
-	            printResult("getUserCount", "" + group.getUserCount());
-	            printResult("getUsers", "" + group.getUsers());
-			}
+            print(script.toString() + " - " + version + " - GROUP CLASS");
+            Group group = null;
+            if (user.getGroups() != null) {
+                group = user.getGroups().get(0);
+                printResult("getName", group.getName());
+                printResult("getID", "" + group.getID());
+                printResult("getDescription", group.getDescription());
+                printResult("getUserCount", "" + group.getUserCount());
+                printResult("getUsers", "" + group.getUsers());
+            }
 
-			print(seperate);
+            print(seperate);
 
-			print(script.toString() + " - " + version + " - GROUP UPDATING");
-			if (group != null) {
+            print(script.toString() + " - " + version + " - GROUP UPDATING");
+            if (group != null) {
                 try {
                     temp = group.getName();
                     group.setName("Debug");
@@ -378,23 +391,24 @@ public class BifrostDebug {
                 } catch (UnsupportedFunction e) {
                     print("NOT SUPPORTED");
                 }
-	        }
-			
-			print(seperate);
+            }
 
-			print(script.toString() + " - " + version + " - GROUP CREATE");
-			Group newGroup = new Group("craftfire_group_" + randomInt);
-			newGroup.setDescription("Description is not needed!");
+            print(seperate);
+
+            print(script.toString() + " - " + version + " - GROUP CREATE");
+            Group newGroup = bifrost.getScriptAPI().getHandle(script)
+                    .newGroup("craftfire_group_" + randomInt);
+            newGroup.setDescription("Description is not needed!");
             try {
                 newGroup.createGroup();
             } catch (UnsupportedFunction e) {
                 print("NOT SUPPORTED");
             }
 
-			print(seperate);
+            print(seperate);
 
-			print(script.toString() + " - " + version + " - POST CLASS");
-			Post post = user.getLastPost();
+            print(script.toString() + " - " + version + " - POST CLASS");
+            Post post = user.getLastPost();
             if (post != null) {
                 printResult("getAuthor", "" + post.getAuthor());
                 printResult("getBody", post.getBody());
@@ -414,18 +428,22 @@ public class BifrostDebug {
                 post.updatePost();
             }
 
-			print(seperate);
+            print(seperate);
 
-			print(script.toString() + " - " + version + " - POST CREATE");
-			Post newPost = new Post(1, 2);
-			newPost.setBody("Test: This it the body of the post?!");
-			newPost.setAuthor(authAPI.getScriptAPI().getUser("craftfire" + randomInt));
-			newPost.setSubject("Test " + randomInt + ": This is the subject of the post!");
-			newPost.createPost();
+            print(script.toString() + " - " + version + " - POST CREATE");
+            Post newPost = bifrost.getScriptAPI().getHandle(script)
+                    .newPost(1, 2);
+            newPost.setBody("Test: This it the body of the post?!");
+            newPost.setAuthor(bifrost.getScriptAPI().getHandle(script)
+                    .getUser("craftfire" + randomInt));
+            newPost.setSubject("Test " + randomInt
+                    + ": This is the subject of the post!");
+            newPost.createPost();
 
-			print(seperate);
+            print(seperate);
 
-			print(script.toString() + " - " + version + " - PRIVATEMESSAGE CLASS");
+            print(script.toString() + " - " + version
+                    + " - PRIVATEMESSAGE CLASS");
             try {
                 PrivateMessage pm = user.getPMsSent(1).get(0);
                 printResult("getBody", pm.getBody());
@@ -447,54 +465,65 @@ public class BifrostDebug {
             } catch (UnsupportedFunction e) {
                 print("NOT SUPPORTED");
             }
-			print(seperate);
+            print(seperate);
 
-			print(script.toString() + " - " + version + " - PRIVATEMESSAGE CREATE");
-			ScriptUser from = authAPI.getScriptAPI().getUser("Contex");
-			List<ScriptUser> recipients = new ArrayList<ScriptUser>();
-			recipients.add(authAPI.getScriptAPI().getUser("Craftfire"));
-			recipients.add(authAPI.getScriptAPI().getUser("craftfire" + randomInt));
-			PrivateMessage newPM = new PrivateMessage(authAPI.getScript(), from, recipients);
-			newPM.setBody("This is an example body: " + randomInt);
-			newPM.setSubject("This is an example subject: " + randomInt);
-			newPM.setNew(authAPI.getScriptAPI().getUser("Craftfire"), true);
+            print(script.toString() + " - " + version
+                    + " - PRIVATEMESSAGE CREATE");
+            ScriptUser from = bifrost.getScriptAPI().getHandle(script)
+                    .getUser("Contex");
+            List<ScriptUser> recipients = new ArrayList<ScriptUser>();
+            recipients.add(bifrost.getScriptAPI().getHandle(script)
+                    .getUser("Craftfire"));
+            recipients.add(bifrost.getScriptAPI().getHandle(script)
+                    .getUser("craftfire" + randomInt));
+            PrivateMessage newPM = bifrost.getScriptAPI().getHandle(script)
+                    .newPrivateMessage(from, recipients);
+            newPM.setBody("This is an example body: " + randomInt);
+            newPM.setSubject("This is an example subject: " + randomInt);
+            newPM.setNew(
+                    bifrost.getScriptAPI().getHandle(script)
+                            .getUser("Craftfire"), true);
             try {
                 newPM.createPrivateMessage();
             } catch (UnsupportedFunction e) {
                 print("NOT SUPPORTED");
             }
 
-			print(seperate);
+            print(seperate);
 
-			print(script.toString() + " - " + version + " - THREAD CLASS");
-			Thread thread = authAPI.getScript().getLastThread();
-			printResult("getAuthor", "" + thread.getAuthor());
-			printResult("getBody", thread.getBody());
-			printResult("getSubject", thread.getSubject());
-			printResult("getBoardID", "" + thread.getBoardID());
-			printResult("getFirstPost", "" + thread.getFirstPost());
-			printResult("getLastPost", "" + thread.getLastPost());
-			printResult("getPosts", "" + thread.getPosts(0));
-			printResult("getReplies", "" + thread.getReplies());
-			printResult("getThreadDate", "" + thread.getThreadDate());
-			printResult("getThreadID", "" + thread.getID());
-			printResult("getViews", "" + thread.getViews());
+            print(script.toString() + " - " + version + " - THREAD CLASS");
+            Thread thread = bifrost.getScriptAPI().getHandle(script)
+                    .getLastThread();
+            printResult("getAuthor", "" + thread.getAuthor());
+            printResult("getBody", thread.getBody());
+            printResult("getSubject", thread.getSubject());
+            printResult("getBoardID", "" + thread.getBoardID());
+            printResult("getFirstPost", "" + thread.getFirstPost());
+            printResult("getLastPost", "" + thread.getLastPost());
+            printResult("getPosts", "" + thread.getPosts(0));
+            printResult("getReplies", "" + thread.getReplies());
+            printResult("getThreadDate", "" + thread.getThreadDate());
+            printResult("getThreadID", "" + thread.getID());
+            printResult("getViews", "" + thread.getViews());
 
-			print(seperate);
+            print(seperate);
 
-			print(script.toString() + " - " + version + " - THREAD UPDATING");
-			temp = thread.getSubject();
-			thread.setSubject("Debug");
-			thread.updateThread();
-			thread.setSubject(temp);
-			thread.updateThread();
+            print(script.toString() + " - " + version + " - THREAD UPDATING");
+            temp = thread.getSubject();
+            thread.setSubject("Debug");
+            thread.updateThread();
+            thread.setSubject(temp);
+            thread.updateThread();
 
-			print(seperate);
+            print(seperate);
 
-			print(script.toString() + " - " + version + " - THREAD CREATE");
-			Thread newThread = new Thread(authAPI.getScript(), 2);
-			newThread.setBody("Test: " + randomInt + " This it the body of the thread?!");
-			newThread.setAuthor(authAPI.getScriptAPI().getUser("craftfire" + randomInt));
+            print(script.toString() + " - " + version + " - THREAD CREATE");
+            Thread newThread = bifrost.getScriptAPI().getHandle(script)
+                    .newThread(2);
+            newThread.setBody("Test: " + randomInt
+                    + " This it the body of the thread?!");
+            newThread.setAuthor(bifrost.getScriptAPI().getHandle(script)
+                    .getUser("craftfire" + randomInt));
 			newThread.setSubject("Test: " + randomInt + " This is the subject of the thread!");
 			newThread.createThread();
 
