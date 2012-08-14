@@ -42,7 +42,7 @@ import com.craftfire.bifrost.enums.CacheGroup;
 import com.craftfire.bifrost.enums.Scripts;
 import com.craftfire.bifrost.exceptions.UnsupportedFunction;
 import com.craftfire.commons.CraftCommons;
-import com.craftfire.commons.database.DataList;
+import com.craftfire.commons.database.DataRow;
 import com.craftfire.commons.database.Results;
 import com.craftfire.commons.enums.Encryption;
 import com.craftfire.commons.managers.DataManager;
@@ -403,10 +403,10 @@ public class WordPress extends Script {
                     .getResults("SELECT `meta_value`, `user_id` FROM `"
                             + this.dataManager.getPrefix()
                             + "usermeta` WHERE `meta_key` = 'wp_capabilities'");
-            List<DataList> records = results.getArray();
-            Iterator<DataList> I = records.iterator();
+            List<DataRow> records = results.getArray();
+            Iterator<DataRow> I = records.iterator();
             while (I.hasNext()) {
-                DataList d = I.next();
+                DataRow d = I.next();
                 String capabilities = d.getStringField("meta_value");
                 int userid = d.getIntField("user_id");
                 Map<String, String> capmap = null;
@@ -649,7 +649,8 @@ public class WordPress extends Script {
     }
 
     @Override
-    public Post getLastPost() throws NumberFormatException, UnsupportedFunction {
+    public Post getLastPost() throws NumberFormatException,
+            UnsupportedFunction, SQLException {
         init();
         return this.handle.getPost(this.dataManager.getLastID("comment_ID",
                 "comments"));
@@ -657,7 +658,7 @@ public class WordPress extends Script {
 
     @Override
     public Post getLastUserPost(String username) throws NumberFormatException,
-            UnsupportedFunction {
+            UnsupportedFunction, SQLException {
         init();
         return this.handle.getPost(this.dataManager.getLastID("comment_ID",
                 "comments", "`comment_author` = '" + username + "'"));
@@ -665,7 +666,7 @@ public class WordPress extends Script {
 
     @Override
     public List<Post> getPosts(int limit) throws NumberFormatException,
-            UnsupportedFunction {
+            UnsupportedFunction, SQLException {
         init();
         String limitstring = "";
         List<HashMap<String, Object>> array;
@@ -686,7 +687,7 @@ public class WordPress extends Script {
 
     @Override
     public List<Post> getPostsFromThread(int threadid, int limit)
-            throws NumberFormatException, UnsupportedFunction {
+            throws UnsupportedFunction, NumberFormatException, SQLException {
         init();
         String limitstring = "";
         List<HashMap<String, Object>> array;
@@ -786,14 +787,16 @@ public class WordPress extends Script {
     }
 
     @Override
-    public Thread getLastThread() throws UnsupportedFunction {
+    public Thread getLastThread() throws UnsupportedFunction,
+            NumberFormatException, SQLException {
         init();
         return this.handle.getThread(this.dataManager.getLastID("ID",
                 "posts"));
     }
 
     @Override
-    public Thread getLastUserThread(String username) throws UnsupportedFunction {
+    public Thread getLastUserThread(String username)
+            throws UnsupportedFunction, NumberFormatException, SQLException {
         init();
         return this.handle.getThread(this.dataManager.getLastID("ID",
                 "posts", "`post_author` = '" + getUserID(username) + "'"));
@@ -851,7 +854,7 @@ public class WordPress extends Script {
 
     @Override
     public List<Thread> getThreads(int limit) throws NumberFormatException,
-            UnsupportedFunction {
+            UnsupportedFunction, SQLException {
         init();
         String limitstring = "";
         List<Thread> threads;

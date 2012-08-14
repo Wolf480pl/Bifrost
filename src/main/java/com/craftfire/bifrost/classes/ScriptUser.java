@@ -146,7 +146,7 @@ public class ScriptUser implements ScriptUserInterface {
 
     @Override
     @SuppressWarnings("unchecked")
-    public List<Group> getGroups() throws UnsupportedFunction {
+    public List<Group> getGroups() throws UnsupportedFunction, SQLException {
         return Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).getUserGroups(this.username);
     }
 
@@ -326,12 +326,14 @@ public class ScriptUser implements ScriptUserInterface {
     }
 
     @Override
-    public Thread getLastThread() throws UnsupportedFunction {
+    public Thread getLastThread() throws UnsupportedFunction,
+            NumberFormatException, SQLException {
         return Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).getLastUserThread(this.username);
     }
 
     @Override
-    public Post getLastPost() throws UnsupportedFunction {
+    public Post getLastPost() throws UnsupportedFunction,
+            NumberFormatException, SQLException {
         return Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).getLastUserPost(this.username);
     }
 

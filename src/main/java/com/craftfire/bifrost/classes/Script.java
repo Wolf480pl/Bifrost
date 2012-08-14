@@ -158,17 +158,19 @@ public class Script implements ScriptInterface {
     }
 
     @Override
-	public Group getGroup(int groupid) throws UnsupportedFunction {
+    public Group getGroup(int groupid) throws UnsupportedFunction, SQLException {
 		throw new UnsupportedFunction();
 	}
 
 	@Override
-	public Group getGroup(String group) throws UnsupportedFunction {
+    public Group getGroup(String group) throws UnsupportedFunction,
+            SQLException {
 		throw new UnsupportedFunction();
 	}
 
 	@Override
-	public List<Group> getUserGroups(String username) throws UnsupportedFunction {
+    public List<Group> getUserGroups(String username)
+            throws UnsupportedFunction, SQLException {
 		throw new UnsupportedFunction();
 	}
 
@@ -228,27 +230,32 @@ public class Script implements ScriptInterface {
 	}
 
 	@Override
-	public Post getLastPost() throws UnsupportedFunction {
+    public Post getLastPost() throws UnsupportedFunction,
+            NumberFormatException, SQLException {
 		throw new UnsupportedFunction();
 	}
 
 	@Override
-	public Post getLastUserPost(String username) throws UnsupportedFunction {
+    public Post getLastUserPost(String username) throws UnsupportedFunction,
+            NumberFormatException, SQLException {
 		throw new UnsupportedFunction();
 	}
 
 	@Override
-	public List<Post> getPosts(int limit) throws UnsupportedFunction {
+    public List<Post> getPosts(int limit) throws UnsupportedFunction,
+            NumberFormatException, SQLException {
 		throw new UnsupportedFunction();
 	}
 
 	@Override
-	public List<Post> getPostsFromThread(int threadid, int limit) throws UnsupportedFunction {
+    public List<Post> getPostsFromThread(int threadid, int limit)
+            throws UnsupportedFunction, NumberFormatException, SQLException {
 		throw new UnsupportedFunction();
 	}
 
 	@Override
-	public Post getPost(int postid) throws UnsupportedFunction {
+    public Post getPost(int postid) throws UnsupportedFunction,
+            NumberFormatException, SQLException {
 		throw new UnsupportedFunction();
 	}
 
@@ -273,22 +280,26 @@ public class Script implements ScriptInterface {
 	}
 
 	@Override
-	public Thread getLastThread() throws UnsupportedFunction {
+    public Thread getLastThread() throws UnsupportedFunction,
+            NumberFormatException, SQLException {
 		throw new UnsupportedFunction();
 	}
 
 	@Override
-	public Thread getLastUserThread(String username) throws UnsupportedFunction {
+    public Thread getLastUserThread(String username)
+            throws UnsupportedFunction, NumberFormatException, SQLException {
 		throw new UnsupportedFunction();
 	}
 
 	@Override
-	public Thread getThread(int threadid) throws UnsupportedFunction {
+    public Thread getThread(int threadid) throws UnsupportedFunction,
+            NumberFormatException, SQLException {
 		throw new UnsupportedFunction();
 	}
 
 	@Override
-	public List<Thread> getThreads(int limit) throws UnsupportedFunction {
+    public List<Thread> getThreads(int limit) throws UnsupportedFunction,
+            NumberFormatException, SQLException {
 		throw new UnsupportedFunction();
 	}
 

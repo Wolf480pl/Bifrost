@@ -313,7 +313,7 @@ public class BifrostDebug {
             print(script.toString() + " - " + version + " - BAN CLASS");
             Ban ban = null;
             try {
-                if (authAPI.getScript().getBans(1) != null) {
+                if (bifrost.getScriptAPI().getHandle(script).getBans(1) != null) {
                     ban = bifrost.getScriptAPI().getHandle(script).getBans(1)
                             .get(0);
                 }

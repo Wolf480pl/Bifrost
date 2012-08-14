@@ -63,7 +63,7 @@ public abstract interface ScriptUserInterface {
 
     public void setLastName(String lastname);
 
-    public List<Group> getGroups() throws UnsupportedFunction;
+    public List<Group> getGroups() throws UnsupportedFunction, SQLException;
 
     public void setGroups(List<Group> groups);
 
@@ -131,9 +131,11 @@ public abstract interface ScriptUserInterface {
 
     public List<String> getIPs() throws UnsupportedFunction;
 
-    public Thread getLastThread() throws UnsupportedFunction;
+    public Thread getLastThread() throws UnsupportedFunction,
+            NumberFormatException, SQLException;
 
-    public Post getLastPost() throws UnsupportedFunction;
+    public Post getLastPost() throws UnsupportedFunction,
+            NumberFormatException, SQLException;
 
     public void updateUser() throws SQLException, UnsupportedFunction;
 

@@ -69,7 +69,8 @@ public class Post implements PostInterface {
     }
 
     @Override
-    public Thread getThread() throws UnsupportedFunction {
+    public Thread getThread() throws UnsupportedFunction,
+            NumberFormatException, SQLException {
         return Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).getThread(this.threadid);
     }
 

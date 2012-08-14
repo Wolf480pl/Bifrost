@@ -19,7 +19,17 @@
  */
 package com.craftfire.bifrost;
 
-import com.craftfire.bifrost.classes.*;
+import java.sql.SQLException;
+import java.util.List;
+
+import com.craftfire.bifrost.classes.Ban;
+import com.craftfire.bifrost.classes.Cache;
+import com.craftfire.bifrost.classes.Group;
+import com.craftfire.bifrost.classes.Post;
+import com.craftfire.bifrost.classes.PrivateMessage;
+import com.craftfire.bifrost.classes.Script;
+import com.craftfire.bifrost.classes.ScriptInterface;
+import com.craftfire.bifrost.classes.ScriptUser;
 import com.craftfire.bifrost.classes.Thread;
 import com.craftfire.bifrost.enums.CacheGroup;
 import com.craftfire.bifrost.enums.Scripts;
@@ -27,9 +37,6 @@ import com.craftfire.bifrost.exceptions.UnsupportedFunction;
 import com.craftfire.bifrost.exceptions.UnsupportedScript;
 import com.craftfire.bifrost.exceptions.UnsupportedVersion;
 import com.craftfire.commons.managers.DataManager;
-
-import java.sql.SQLException;
-import java.util.List;
 
 public class ScriptHandle implements ScriptInterface {
     private Script script;
@@ -164,7 +171,7 @@ public class ScriptHandle implements ScriptInterface {
     }
 
     @Override
-    public Group getGroup(int groupID) throws UnsupportedFunction {
+    public Group getGroup(int groupID) throws UnsupportedFunction, SQLException {
         if (Group.hasCache(this, groupID)) {
             return Group.getCache(this, groupID);
         }
@@ -174,7 +181,8 @@ public class ScriptHandle implements ScriptInterface {
     }
 
     @Override
-    public Group getGroup(String groupString) throws UnsupportedFunction {
+    public Group getGroup(String groupString) throws UnsupportedFunction,
+            SQLException {
         if (Group.hasCache(this, groupString)) {
             return Group.getCache(this, groupString);
         }
@@ -185,7 +193,8 @@ public class ScriptHandle implements ScriptInterface {
 
     @Override
     @SuppressWarnings("unchecked")
-    public List<Group> getUserGroups(String username) throws UnsupportedFunction {
+    public List<Group> getUserGroups(String username)
+            throws UnsupportedFunction, SQLException {
         if (this.script.getCache().contains(CacheGroup.USER_GROUP, username)) {
             return (List<Group>) this.script.getCache().get(CacheGroup.USER_GROUP, username);
         }
@@ -271,7 +280,8 @@ public class ScriptHandle implements ScriptInterface {
     }
 
     @Override
-    public Post getPost(int postID) throws UnsupportedFunction {
+    public Post getPost(int postID) throws UnsupportedFunction,
+            NumberFormatException, SQLException {
         if (Post.hasCache(this, postID)) {
             return Post.getCache(this, postID);
         }
@@ -282,7 +292,8 @@ public class ScriptHandle implements ScriptInterface {
 
     @Override
     @SuppressWarnings("unchecked")
-    public List<Post> getPosts(int limit) throws UnsupportedFunction {
+    public List<Post> getPosts(int limit) throws UnsupportedFunction,
+            NumberFormatException, SQLException {
         if (this.script.getCache().contains(CacheGroup.POST_LIST)) {
             return (List<Post>) this.script.getCache().get(CacheGroup.POST_LIST);
         }
@@ -293,7 +304,8 @@ public class ScriptHandle implements ScriptInterface {
 
     @Override
     @SuppressWarnings("unchecked")
-    public List<Post> getPostsFromThread(int threadid, int limit) throws UnsupportedFunction {
+    public List<Post> getPostsFromThread(int threadid, int limit)
+            throws UnsupportedFunction, NumberFormatException, SQLException {
         if (this.script.getCache().contains(CacheGroup.THREAD_POSTS, threadid)) {
             return (List<Post>) this.script.getCache().get(CacheGroup.THREAD_POSTS, threadid);
         }
@@ -335,7 +347,8 @@ public class ScriptHandle implements ScriptInterface {
     }
 
     @Override
-    public Post getLastPost() throws UnsupportedFunction {
+    public Post getLastPost() throws UnsupportedFunction,
+            NumberFormatException, SQLException {
         if (this.script.getCache().contains(CacheGroup.POST_LAST)) {
             return (Post) this.script.getCache().get(CacheGroup.POST_LAST);
         }
@@ -345,7 +358,8 @@ public class ScriptHandle implements ScriptInterface {
     }
 
     @Override
-    public Post getLastUserPost(String username) throws UnsupportedFunction {
+    public Post getLastUserPost(String username) throws UnsupportedFunction,
+            NumberFormatException, SQLException {
         if (this.script.getCache().contains(CacheGroup.POST_LAST_USER, username)) {
             return (Post) this.script.getCache().get(CacheGroup.POST_LAST_USER, username);
         }
@@ -375,7 +389,8 @@ public class ScriptHandle implements ScriptInterface {
     }
 
     @Override
-    public com.craftfire.bifrost.classes.Thread getLastThread() throws UnsupportedFunction {
+    public com.craftfire.bifrost.classes.Thread getLastThread()
+            throws UnsupportedFunction, NumberFormatException, SQLException {
         if (this.script.getCache().contains(CacheGroup.THREAD_LAST)) {
             return (Thread) this.script.getCache().get(CacheGroup.THREAD_LAST);
         }
@@ -385,7 +400,8 @@ public class ScriptHandle implements ScriptInterface {
     }
 
     @Override
-    public Thread getLastUserThread(String username) throws UnsupportedFunction {
+    public Thread getLastUserThread(String username)
+            throws UnsupportedFunction, NumberFormatException, SQLException {
         if (this.script.getCache().contains(CacheGroup.THREAD_LAST_USER, username)) {
             return (Thread) this.script.getCache().get(CacheGroup.THREAD_LAST_USER, username);
         }
@@ -395,7 +411,8 @@ public class ScriptHandle implements ScriptInterface {
     }
 
     @Override
-    public Thread getThread(int threadID) throws UnsupportedFunction {
+    public Thread getThread(int threadID) throws UnsupportedFunction,
+            NumberFormatException, SQLException {
         if (Thread.hasCache(this, threadID)) {
             return Thread.getCache(this, threadID);
         }
@@ -406,7 +423,8 @@ public class ScriptHandle implements ScriptInterface {
 
     @Override
     @SuppressWarnings("unchecked")
-    public List<Thread> getThreads(int limit) throws UnsupportedFunction {
+    public List<Thread> getThreads(int limit) throws UnsupportedFunction,
+            NumberFormatException, SQLException {
         if (this.script.getCache().contains(CacheGroup.THREAD_LIST)) {
             return (List<Thread>) this.script.getCache().get(CacheGroup.THREAD_LIST);
         }
@@ -566,6 +584,7 @@ public class ScriptHandle implements ScriptInterface {
         return this.script.getScriptShortname();
     }
 
+    @Override
     public boolean authenticate(String username, String password) throws UnsupportedFunction {
         return this.script.authenticate(username, password);
     }

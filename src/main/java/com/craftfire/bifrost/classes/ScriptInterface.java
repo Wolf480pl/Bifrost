@@ -195,37 +195,48 @@ public abstract interface ScriptInterface {
      */
     public int getGroupID(String group) throws UnsupportedFunction;
 
-	/**
-	 * Returns a Group object of the given group id, if nothing is found it returns null.
-	 *
-	 * @param groupid The group ID.
-	 * @return        Group object, null if nothing was found.
-	 * @see           Group
-	 * @throws        UnsupportedFunction if the function is not supported by the script.
-	 */
-	public Group getGroup(int groupid) throws UnsupportedFunction;
+	    /**
+     * Returns a Group object of the given group id, if nothing is found it
+     * returns null.
+     * 
+     * @param groupid The group ID.
+     * @return Group object, null if nothing was found.
+     * @see Group
+     * @throws UnsupportedFunction if the function is not supported by the
+     *             script.
+     * @throws SQLException
+     */
+    public Group getGroup(int groupid) throws UnsupportedFunction, SQLException;
 
-	/**
-	 * Returns a Group object of the given group name, if nothing is found it returns null.
-	 *
-	 * @param group The group name.
-	 * @return      Group object, null if nothing was found.
-	 * @see         Group
-	 * @throws      UnsupportedFunction if the function is not supported by the script.
-	 */
-	public Group getGroup(String group) throws UnsupportedFunction;
+	    /**
+     * Returns a Group object of the given group name, if nothing is found it
+     * returns null.
+     * 
+     * @param group The group name.
+     * @return Group object, null if nothing was found.
+     * @see Group
+     * @throws UnsupportedFunction if the function is not supported by the
+     *             script.
+     * @throws SQLException
+     */
+    public Group getGroup(String group) throws UnsupportedFunction,
+            SQLException;
 
-	/**
-	 * Returns a List with the Group objects that the user is a part of.
-	 * If none are found, the List will be empty.
-	 *
-	 * @param username The username to grab the groups of.
-	 * @return         List with Group objects, if none are found it returns an empty List.
-	 * @see            Group
-	 * @see            List
-	 * @throws         UnsupportedFunction if the function is not supported by the script.
-	 */
-	public List<Group> getUserGroups(String username) throws UnsupportedFunction;
+	    /**
+     * Returns a List with the Group objects that the user is a part of. If none
+     * are found, the List will be empty.
+     * 
+     * @param username The username to grab the groups of.
+     * @return List with Group objects, if none are found it returns an empty
+     *         List.
+     * @see Group
+     * @see List
+     * @throws UnsupportedFunction if the function is not supported by the
+     *             script.
+     * @throws SQLException
+     */
+    public List<Group> getUserGroups(String username)
+            throws UnsupportedFunction, SQLException;
 
 	/**
 	 * Updates the Group object with whatever values set by the user.
@@ -325,44 +336,64 @@ public abstract interface ScriptInterface {
 	 */
 	public void createPrivateMessage(PrivateMessage privateMessage) throws SQLException, UnsupportedFunction;
 
-	/**
-	 * Returns a Post object of the given post id, if nothing is found it returns null.
-	 *
-	 * @param postid The post ID.
-	 * @return       Post object, null if nothing was found.
-	 * @see          Post
-	 * @throws       UnsupportedFunction if the function is not supported by the script.
-	 */
-	public Post getPost(int postid) throws UnsupportedFunction;
+	    /**
+     * Returns a Post object of the given post id, if nothing is found it
+     * returns null.
+     * 
+     * @param postid The post ID.
+     * @return Post object, null if nothing was found.
+     * @see Post
+     * @throws UnsupportedFunction if the function is not supported by the
+     *             script.
+     * @throws SQLException
+     * @throws NumberFormatException
+     */
+    public Post getPost(int postid) throws UnsupportedFunction,
+            NumberFormatException, SQLException;
 
-	/**
-	 * Returns a List with Post objects.
-	 * Parameter {@param limit} can be used as a limit of how many objects should be returned.
-	 * Set {@param limit} to 0 to return all the objects.
-	 * If none are found, the List will be empty.
-	 *
-	 * @param limit The limit. Set to 0 if you want to return all.
-	 * @return      List with Post objects, if none are found it returns an empty List.
-	 * @see         Post
-	 * @see         List
-	 * @throws      UnsupportedFunction if the function is not supported by the script.
-	 */
-	public List<Post> getPosts(int limit) throws UnsupportedFunction;
+	    /**
+     * Returns a List with Post objects. Parameter
+     * 
+     * @param limit can be used as a limit of how many objects should be
+     *            returned. Set
+     * @param limit to 0 to return all the objects. If none are found, the List
+     *            will be empty.
+     * 
+     * @param limit The limit. Set to 0 if you want to return all.
+     * @return List with Post objects, if none are found it returns an empty
+     *         List.
+     * @see Post
+     * @see List
+     * @throws UnsupportedFunction if the function is not supported by the
+     *             script.
+     * @throws SQLException
+     * @throws NumberFormatException
+     */
+    public List<Post> getPosts(int limit) throws UnsupportedFunction,
+            NumberFormatException, SQLException;
 
-	/**
-	 * Returns a List with Post objects from the given thread/topic ID.
-	 * Parameter {@param limit} can be used as a limit of how many objects should be returned.
-	 * Set {@param limit} to 0 to return all the objects.
-	 * If none are found, the List will be empty.
-	 *
-	 * @param threadid The thread ID to grab the posts from.
-	 * @param limit    The limit. Set to 0 if you want to return all.
-	 * @return         List with Post objects, if none are found it returns an empty List.
-	 * @see            Post
-	 * @see            List
-	 * @throws         UnsupportedFunction if the function is not supported by the script.
-	 */
-	public List<Post> getPostsFromThread(int threadid, int limit) throws UnsupportedFunction;
+	    /**
+     * Returns a List with Post objects from the given thread/topic ID.
+     * Parameter
+     * 
+     * @param limit can be used as a limit of how many objects should be
+     *            returned. Set
+     * @param limit to 0 to return all the objects. If none are found, the List
+     *            will be empty.
+     * 
+     * @param threadid The thread ID to grab the posts from.
+     * @param limit The limit. Set to 0 if you want to return all.
+     * @return List with Post objects, if none are found it returns an empty
+     *         List.
+     * @see Post
+     * @see List
+     * @throws UnsupportedFunction if the function is not supported by the
+     *             script.
+     * @throws SQLException
+     * @throws NumberFormatException
+     */
+    public List<Post> getPostsFromThread(int threadid, int limit)
+            throws UnsupportedFunction, NumberFormatException, SQLException;
 
 	/**
 	 * Creates the Post object with whatever values set by the user.
@@ -401,24 +432,34 @@ public abstract interface ScriptInterface {
 	 */
 	public int getTotalPostCount() throws UnsupportedFunction;
 
-	/**
-	 * Returns the Post object of the last post that has been made.
-	 *
-	 * @return Post object of the last post.
-	 * @see    Post
-	 * @throws UnsupportedFunction if the function is not supported by the script.
-	 */
-	public Post getLastPost() throws UnsupportedFunction;
+	    /**
+     * Returns the Post object of the last post that has been made.
+     * 
+     * @return Post object of the last post.
+     * @see Post
+     * @throws UnsupportedFunction if the function is not supported by the
+     *             script.
+     * @throws SQLException
+     * @throws NumberFormatException
+     */
+    public Post getLastPost() throws UnsupportedFunction,
+            NumberFormatException, SQLException;
 
-	/**
-	 * Returns the Post object of the last post that has been made by {@param username}.
-	 *
-	 * @param username The username to grab the last post from.
-	 * @return         Post object of the last post made by the user.
-	 * @see            Post
-	 * @throws         UnsupportedFunction if the function is not supported by the script.
-	 */
-	public Post getLastUserPost(String username) throws UnsupportedFunction;
+	    /**
+     * Returns the Post object of the last post that has been made by
+     * 
+     * @param username .
+     * 
+     * @param username The username to grab the last post from.
+     * @return Post object of the last post made by the user.
+     * @see Post
+     * @throws UnsupportedFunction if the function is not supported by the
+     *             script.
+     * @throws SQLException
+     * @throws NumberFormatException
+     */
+    public Post getLastUserPost(String username) throws UnsupportedFunction,
+            NumberFormatException, SQLException;
 
 	/**
 	 * Returns the complete count of how many threads have been made.
@@ -437,48 +478,70 @@ public abstract interface ScriptInterface {
 	 */
 	public int getThreadCount(String username) throws UnsupportedFunction;
 
-	/**
-	 * Returns the Thread object of the last thread that has been made.
-	 *
-	 * @return Thread object of the last thread.
-	 * @see    Thread
-	 * @throws UnsupportedFunction if the function is not supported by the script.
-	 */
-	public Thread getLastThread() throws UnsupportedFunction;
+	    /**
+     * Returns the Thread object of the last thread that has been made.
+     * 
+     * @return Thread object of the last thread.
+     * @see Thread
+     * @throws UnsupportedFunction if the function is not supported by the
+     *             script.
+     * @throws SQLException
+     * @throws NumberFormatException
+     */
+    public Thread getLastThread() throws UnsupportedFunction,
+            NumberFormatException, SQLException;
 
-	/**
-	 * Returns the Thread object of the last thread that has been made by {@param username}.
-	 *
-	 * @param username The username to grab the last thread from.
-	 * @return         Thread object of the last post made by the user.
-	 * @see            Thread
-	 * @throws         UnsupportedFunction if the function is not supported by the script.
-	 */
-	public Thread getLastUserThread(String username) throws UnsupportedFunction;
+	    /**
+     * Returns the Thread object of the last thread that has been made by
+     * 
+     * @param username .
+     * 
+     * @param username The username to grab the last thread from.
+     * @return Thread object of the last post made by the user.
+     * @see Thread
+     * @throws UnsupportedFunction if the function is not supported by the
+     *             script.
+     * @throws SQLException
+     * @throws NumberFormatException
+     */
+    public Thread getLastUserThread(String username)
+            throws UnsupportedFunction, NumberFormatException, SQLException;
 
-	/**
-	 * Returns a Thread object of the given thread ID, if nothing is found it returns null.
-	 *
-	 * @param threadid The post ID.
-	 * @return         Thread object, null if nothing was found.
-	 * @see            Thread
-	 * @throws         UnsupportedFunction if the function is not supported by the script.
-	 */
-	public Thread getThread(int threadid) throws UnsupportedFunction;
+	    /**
+     * Returns a Thread object of the given thread ID, if nothing is found it
+     * returns null.
+     * 
+     * @param threadid The post ID.
+     * @return Thread object, null if nothing was found.
+     * @see Thread
+     * @throws UnsupportedFunction if the function is not supported by the
+     *             script.
+     * @throws SQLException
+     * @throws NumberFormatException
+     */
+    public Thread getThread(int threadid) throws UnsupportedFunction,
+            NumberFormatException, SQLException;
 
-	/**
-	 * Returns a List with Thread objects.
-	 * Parameter {@param limit} can be used as a limit of how many objects should be returned.
-	 * Set {@param limit} to 0 to return all the objects.
-	 * If none are found, the List will be empty.
-	 *
-	 * @param limit The limit. Set to 0 if you want to return all.
-	 * @return      List with Thread objects, if none are found it returns an empty List.
-	 * @see         Thread
-	 * @see         List
-	 * @throws      UnsupportedFunction if the function is not supported by the script.
-	 */
-	public List<Thread> getThreads(int limit) throws UnsupportedFunction;
+	    /**
+     * Returns a List with Thread objects. Parameter
+     * 
+     * @param limit can be used as a limit of how many objects should be
+     *            returned. Set
+     * @param limit to 0 to return all the objects. If none are found, the List
+     *            will be empty.
+     * 
+     * @param limit The limit. Set to 0 if you want to return all.
+     * @return List with Thread objects, if none are found it returns an empty
+     *         List.
+     * @see Thread
+     * @see List
+     * @throws UnsupportedFunction if the function is not supported by the
+     *             script.
+     * @throws SQLException
+     * @throws NumberFormatException
+     */
+    public List<Thread> getThreads(int limit) throws UnsupportedFunction,
+            NumberFormatException, SQLException;
 
 	/**
 	 * Updated the Thread object with whatever values set by the user.

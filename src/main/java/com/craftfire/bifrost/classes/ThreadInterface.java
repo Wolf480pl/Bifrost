@@ -29,32 +29,41 @@ import com.craftfire.bifrost.exceptions.UnsupportedFunction;
  * This interface contains functions that are related to a Thread.
  */
 public abstract interface ThreadInterface {
-	/**
-	 * Returns the first Post of the thread, null if error.
-	 *
-	 * @return first Post of the thread, null if error.
-	 * @see Post
-	 */
-    public Post getFirstPost() throws UnsupportedFunction;
+	    /**
+     * Returns the first Post of the thread, null if error.
+     * 
+     * @return first Post of the thread, null if error.
+     * @throws SQLException
+     * @throws NumberFormatException
+     * @see Post
+     */
+    public Post getFirstPost() throws UnsupportedFunction,
+            NumberFormatException, SQLException;
 
-	/**
-	 * Returns the last Post of the thread, null if error.
-	 *
-	 * @return last Post of the thread, null if error.
-	 * @see Post
-	 */
-    public Post getLastPost() throws UnsupportedFunction;
+	    /**
+     * Returns the last Post of the thread, null if error.
+     * 
+     * @return last Post of the thread, null if error.
+     * @throws SQLException
+     * @throws NumberFormatException
+     * @see Post
+     */
+    public Post getLastPost() throws UnsupportedFunction,
+            NumberFormatException, SQLException;
 
-	/**
-	 * Returns a List of Post's depending on the limit, limit = 0 returns all posts.
-	 * List will be empty if there were no posts.
-	 *
-	 * @param limit how many posts that should be returned, 0 = returns all.
-	 * @return a List of Post's
-	 * @see List
-	 * @see Post
-	 */
-    public List<Post> getPosts(int limit) throws UnsupportedFunction;
+	    /**
+     * Returns a List of Post's depending on the limit, limit = 0 returns all
+     * posts. List will be empty if there were no posts.
+     * 
+     * @param limit how many posts that should be returned, 0 = returns all.
+     * @return a List of Post's
+     * @throws SQLException
+     * @throws NumberFormatException
+     * @see List
+     * @see Post
+     */
+    public List<Post> getPosts(int limit) throws UnsupportedFunction,
+            NumberFormatException, SQLException;
 
 	/**
 	 * Returns the ID of the thread, 0 if error.

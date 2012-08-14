@@ -42,7 +42,8 @@ public abstract interface PostInterface {
 
     public int getThreadID();
 
-    public Thread getThread() throws UnsupportedFunction;
+    public Thread getThread() throws UnsupportedFunction,
+            NumberFormatException, SQLException;
 
     public int getBoardID();
 

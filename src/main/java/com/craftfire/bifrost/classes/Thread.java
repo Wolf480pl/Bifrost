@@ -67,18 +67,21 @@ public class Thread implements ThreadInterface {
     }
 
     @Override
-    public List<Post> getPosts(int limit) throws UnsupportedFunction {
+    public List<Post> getPosts(int limit) throws UnsupportedFunction,
+            NumberFormatException, SQLException {
         return Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript())
                                                                             .getPostsFromThread(this.threadid, limit);
     }
 
     @Override
-    public Post getFirstPost() throws UnsupportedFunction {
+    public Post getFirstPost() throws UnsupportedFunction,
+            NumberFormatException, SQLException {
         return Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).getPost(this.firstpostid);
     }
 
     @Override
-    public Post getLastPost() throws UnsupportedFunction {
+    public Post getLastPost() throws UnsupportedFunction,
+            NumberFormatException, SQLException {
         return Bifrost.getInstance().getScriptAPI().getHandle(this.script.getScript()).getPost(this.lastpostid);
     }
 
