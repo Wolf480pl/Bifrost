@@ -1,0 +1,86 @@
+/*
+ * This file is part of AuthAPI <http://www.craftfire.com/>.
+ *
+ * AuthAPI is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * AuthAPI is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package com.craftfire.bifrost;
+
+import com.craftfire.bifrost.ScriptAPI.Scripts;
+import com.craftfire.bifrost.classes.Cache;
+import com.craftfire.bifrost.classes.Script;
+import com.craftfire.bifrost.exceptions.UnsupportedScript;
+import com.craftfire.bifrost.exceptions.UnsupportedVersion;
+import com.craftfire.commons.managers.CacheManager;
+import com.craftfire.commons.managers.DataManager;
+import com.craftfire.commons.managers.LoggingManager;
+
+//TODO: Javadoc, analytics and logging.
+public class Bifrost {
+    private static Bifrost instance;
+    private final ScriptAPI scriptAPI;
+    private final Script script;
+    private final DataManager dataManager;
+    private final CacheManager cacheManager;
+    private final Cache cache;
+	private final LoggingManager loggingManager = new LoggingManager("CraftFire.AuthAPI", "[AuthAPI]");
+
+    public Bifrost(Scripts script, String version, DataManager dataManager) throws UnsupportedVersion {
+        this.scriptAPI = new ScriptAPI(script, version);
+        this.script = this.scriptAPI.getScript();
+        this.dataManager = dataManager;
+        this.cacheManager = new CacheManager();
+        this.cache = new Cache();
+        instance = this;
+        this.loggingManager.debug("Initialized AuthAPI");
+    }
+
+    public Bifrost(String script, String version, DataManager dataManager) throws UnsupportedScript,
+                                                                                  UnsupportedVersion {
+        this.scriptAPI = new ScriptAPI(script, version);
+        this.script = this.scriptAPI.getScript();
+        this.dataManager = dataManager;
+        this.cacheManager = new CacheManager();
+        this.cache = new Cache();
+        instance = this;
+        this.loggingManager.debug("Initialized AuthAPI");
+    }
+
+    public static Bifrost getInstance() {
+        return instance;
+    }
+
+    protected Script getScript() {
+        return this.script;
+    }
+
+    public ScriptAPI getScriptAPI() {
+        return this.scriptAPI;
+    }
+
+    public DataManager getDataManager() {
+        return this.dataManager;
+    }
+
+	public LoggingManager getLoggingManager() {
+		return this.loggingManager;
+	}
+
+    public CacheManager getCacheManager() {
+        return this.cacheManager;
+    }
+
+    public Cache getCache() {
+        return this.cache;
+    }
+}
