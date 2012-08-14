@@ -192,6 +192,7 @@ public class WordPress extends Script {
                 user.setLastName(this.dataManager.getStringField("usermeta",
                         "meta_value", "`user_id` = '" + user.getID()
                                 + "' AND `meta_key` = 'last_name'"));
+                user.setRealName(user.getFirstName() + user.getLastName());
                 user.setNickname(this.dataManager.getStringField("usermeta",
                         "meta_value", "`user_id` = '" + user.getID()
                                 + "' AND `meta_key` = 'nickname'"));
