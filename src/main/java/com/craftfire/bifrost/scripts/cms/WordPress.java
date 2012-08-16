@@ -63,18 +63,13 @@ public class WordPress extends Script {
     public WordPress(Scripts script, String version, DataManager dataManager) {
         super(script, version, dataManager);
         this.dataManager = getDataManager();
-        this.handle = Bifrost.getInstance().getScriptAPI().getHandle();
     }
 
     public void init() {
-        // TODO: Remove this method.
         if (this.init) {
             return;
         }
-        /*
-         * Do some lazy initialization stuff. Not necessary anymore, I left it
-         * just in case.
-         */
+        this.handle = Bifrost.getInstance().getScriptAPI().getHandle();
         this.init = true;
     }
 
@@ -722,13 +717,13 @@ public class WordPress extends Script {
         }
         int board = this.dataManager.getStringField("posts", "post_type",
                 "`ID` = '" + array.get("comment_post_ID") + "'")
-                .equalsIgnoreCase("post") ? 0 : 1;
+                .equalsIgnoreCase("post") ? 1 : 2;
         Post post = new Post(this, Integer.parseInt(array.get("comment_ID")
                 .toString()), Integer.parseInt(array.get("comment_post_ID")
                 .toString()), board);
         post.setAuthor(this.handle.getUser(Integer.parseInt(array
-                .get(
-                "user_id").toString())));
+                .get("user_id").toString())));
+        post.setSubject(post.getThread().getSubject());
         post.setBody(array.get("comment_content").toString());
         post.setPostDate((Date) array.get("comment_date"));
         return post;
@@ -792,7 +787,7 @@ public class WordPress extends Script {
             NumberFormatException, SQLException {
         init();
         return this.handle.getThread(this.dataManager.getLastID("ID",
-                "posts"));
+                "posts", "`post_type` = 'post' OR `post_type` = 'page'"));
     }
 
     @Override
@@ -800,7 +795,7 @@ public class WordPress extends Script {
             throws UnsupportedFunction, NumberFormatException, SQLException {
         init();
         return this.handle.getThread(this.dataManager.getLastID("ID",
-                "posts", "`post_author` = '" + getUserID(username) + "'"));
+                "posts", "`post_author` = '" + getUserID(username) + "' AND (`post_type` = 'post' OR `post_type` = 'page')"));
     }
 
     @Override
@@ -828,10 +823,10 @@ public class WordPress extends Script {
                     .get("comment_ID").toString());
         }
         int boardid = array.get("post_type").toString()
-                .equalsIgnoreCase("post") ? 0 : 1;
-        if (boardid > 0
+                .equalsIgnoreCase("post") ? 1 : 2;
+        if (boardid > 1
                 && !array.get("post_type").toString().equalsIgnoreCase("page")) {
-            return null;
+            return null;	// No support for revisions and other poo
         }
         thread = new Thread(this, firstpost, lastpost, threadid, boardid);
         thread.setAuthor(this.handle.getUser(Integer.parseInt(array.get(
@@ -847,7 +842,6 @@ public class WordPress extends Script {
         Map<Object, Object> stickyMap = (Map<Object, Object>) CraftCommons
                 .getUtil().phpUnserialize(sticky_posts);
         thread.setSticky(stickyMap.containsValue(threadid));
-
         thread.setLocked(array.get("comment_status").toString()
                 .equalsIgnoreCase("closed"));
         return thread;
@@ -877,7 +871,9 @@ public class WordPress extends Script {
     public void updateThread(Thread thread) throws SQLException {
         init();
         HashMap<String, Object> data = new HashMap<String, Object>();
-        data.put("post_author", thread.getAuthor().getID());
+        if (thread.getAuthor() != null) {
+        	data.put("post_author", thread.getAuthor().getID());
+        }
         if (thread.getThreadDate() != null) {
             data.put("post_date", new Date(thread.getThreadDate().getTime()));
         }
@@ -890,7 +886,7 @@ public class WordPress extends Script {
                         .replaceAll(" ", "-")));
         data.put("post_modified", new Date(new java.util.Date().getTime()));
         data.put("post_modified_gmt", null /* TODO */);
-        data.put("post_type", thread.getBoardID() == 0 ? "post" : "page");
+        data.put("post_type", thread.getBoardID() <= 1 ? "post" : "page");
         data.put("guid", getHomeURL() + "/?p=" + thread.getID());
         data.put("comment_count", thread.getReplies());
         data.put("comment_status", thread.isLocked() ? "closed" : "open");
@@ -933,9 +929,8 @@ public class WordPress extends Script {
                         .replaceAll(" ", "-")));
         data.put("post_modified", new Date(new java.util.Date().getTime()));
         data.put("post_modified_gmt", null /* TODO */);
-        data.put("post_type", thread.getBoardID() == 0 ? "post" : "page");
+        data.put("post_type", thread.getBoardID() <= 1 ? "post" : "page");
         data.put("comment_count", thread.getReplies());
-        data.put("post_type", thread.getBoardID() == 0 ? "post" : "page");
         this.dataManager.insertFields(data, "posts");
         thread.setID(this.dataManager.getLastID("ID", "posts"));
         data.clear();

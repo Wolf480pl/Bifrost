@@ -190,7 +190,12 @@ public class Thread implements ThreadInterface {
     }
 
     public static void addCache(ScriptHandle handle,Thread thread) {
-        handle.getCache().put(CacheGroup.THREAD, thread.getID(), thread);
+    	if (thread != null) {
+    		addCache(handle, thread.getID(), thread);
+    	}
+    }
+    public static void addCache(ScriptHandle handle, int threadID, Thread thread) {
+        handle.getCache().put(CacheGroup.THREAD, threadID, thread);
     }
 
     @SuppressWarnings("unchecked")

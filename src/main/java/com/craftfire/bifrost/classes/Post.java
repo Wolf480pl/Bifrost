@@ -129,7 +129,12 @@ public class Post implements PostInterface {
     }
 
     public static void addCache(ScriptHandle handle, Post post) {
-        handle.getCache().put(CacheGroup.POST, post.getID(), post);
+    	if (post != null) {
+    		addCache(handle, post.getID(), post);
+    	}
+    }
+    public static void addCache(ScriptHandle handle, int postID, Post post) {
+        handle.getCache().put(CacheGroup.POST, postID, post);
     }
 
     @SuppressWarnings("unchecked")

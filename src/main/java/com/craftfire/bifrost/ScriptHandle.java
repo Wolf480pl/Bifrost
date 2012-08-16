@@ -123,7 +123,7 @@ public class ScriptHandle implements ScriptInterface {
             return ScriptUser.getCache(this, userid);
         }
         ScriptUser user = this.script.getUser(userid);
-        ScriptUser.addCache(this, user);
+        ScriptUser.addCache(this, userid, user);
         return user;
     }
 
@@ -286,7 +286,7 @@ public class ScriptHandle implements ScriptInterface {
             return Post.getCache(this, postID);
         }
         Post post = this.script.getPost(postID);
-        Post.addCache(this, post);
+        Post.addCache(this, postID, post);
         return post;
     }
 
@@ -417,7 +417,7 @@ public class ScriptHandle implements ScriptInterface {
             return Thread.getCache(this, threadID);
         }
         Thread thread = this.script.getThread(threadID);
-        Thread.addCache(this, thread);
+        Thread.addCache(this, threadID, thread);
         return thread;
     }
 

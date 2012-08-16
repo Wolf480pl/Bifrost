@@ -352,7 +352,12 @@ public class ScriptUser implements ScriptUserInterface {
     }
 
     public static void addCache(ScriptHandle handle, ScriptUser scriptUser) {
-        handle.getCache().put(CacheGroup.USER, scriptUser.getID(), scriptUser);
+    	if (scriptUser != null) {
+    		addCache(handle, scriptUser.getID(), scriptUser);
+    	}
+    }
+    public static void addCache(ScriptHandle handle, int userid, ScriptUser scriptUser) {
+        handle.getCache().put(CacheGroup.USER, userid, scriptUser);
     }
 
     @SuppressWarnings("unchecked")
