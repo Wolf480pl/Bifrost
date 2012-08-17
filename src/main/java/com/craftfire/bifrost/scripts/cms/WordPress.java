@@ -693,8 +693,8 @@ public class WordPress extends Script {
         }
         array = this.dataManager.getArrayList("SELECT `comment_ID` FROM `"
                 + this.dataManager.getPrefix()
-                + "comments` WHERE `comment_post_ID` = " + threadid
-                + "' ORDER BY `post_id` ASC" + limitstring);
+                + "comments` WHERE `comment_post_ID` = '" + threadid
+                + "' ORDER BY `comment_ID` ASC" + limitstring);
         posts = new ArrayList<Post>();
         if (array != null) {
             for (HashMap<String, Object> record : array) {
@@ -715,15 +715,17 @@ public class WordPress extends Script {
         if (array.isEmpty()) {
             return null;
         }
-        int board = this.dataManager.getStringField("posts", "post_type",
-                "`ID` = '" + array.get("comment_post_ID") + "'")
-                .equalsIgnoreCase("post") ? 1 : 2;
+        String post_type = this.dataManager.getStringField("posts",
+                "post_type", "`ID` = '" + array.get("comment_post_ID") + "'");
+        int board = (post_type != null && post_type.equalsIgnoreCase("post")) ? 1 : 2;
         Post post = new Post(this, Integer.parseInt(array.get("comment_ID")
                 .toString()), Integer.parseInt(array.get("comment_post_ID")
                 .toString()), board);
         post.setAuthor(this.handle.getUser(Integer.parseInt(array
                 .get("user_id").toString())));
-        post.setSubject(post.getThread().getSubject());
+        if (post.getThread() != null) {
+            post.setSubject(post.getThread().getSubject());
+        }
         post.setBody(array.get("comment_content").toString());
         post.setPostDate((Date) array.get("comment_date"));
         return post;
@@ -739,7 +741,9 @@ public class WordPress extends Script {
                     (post.getAuthor().getNickname() != null) ? post.getAuthor()
                             .getNickname() : post.getAuthor().getUsername());
             data.put("comment_author_email", post.getAuthor().getEmail());
-            data.put("comment_author_IP", post.getAuthor().getLastIP());
+            if (post.getAuthor().getLastIP() != null && !post.getAuthor().getLastIP().isEmpty()) {
+            	data.put("comment_author_IP", post.getAuthor().getLastIP());
+            }
             data.put("user_id", post.getAuthor().getID());
         }
         data.put("comment_date", new Date(new java.util.Date().getTime()));
@@ -822,17 +826,19 @@ public class WordPress extends Script {
             lastpost = Integer.parseInt(array1.get(array1.size() - 1)
                     .get("comment_ID").toString());
         }
-        int boardid = array.get("post_type").toString()
-                .equalsIgnoreCase("post") ? 1 : 2;
-        if (boardid > 1
-                && !array.get("post_type").toString().equalsIgnoreCase("page")) {
-            return null;	// No support for revisions and other poo
+        int boardid = 0;
+        if (array.containsKey("post_type")) {
+            boardid = array.get("post_type").toString().equalsIgnoreCase("post") ? 1 : 2;
+            if (boardid > 1
+                    && !array.get("post_type").toString().equalsIgnoreCase("page")) {
+                return null;	// No support for revisions and other poo
+            }
         }
         thread = new Thread(this, firstpost, lastpost, threadid, boardid);
         thread.setAuthor(this.handle.getUser(Integer.parseInt(array.get(
                 "post_author").toString())));
         thread.setBody(array.get("post_content").toString());
-        thread.setSubject("post_title");
+        thread.setSubject(array.get("post_title").toString());
         thread.setThreadDate((Date) array.get("post_date"));
         thread.setReplies(Integer.parseInt(array.get("comment_count")
                 .toString()));
@@ -880,8 +886,7 @@ public class WordPress extends Script {
         data.put("post_date_gmt", null /* TODO */);
         data.put("post_content", thread.getBody());
         data.put("post_title", thread.getSubject());
-        data.put(
-                "post_name",
+        data.put("post_name",
                 URLEncoder.encode(thread.getSubject().toLowerCase()
                         .replaceAll(" ", "-")));
         data.put("post_modified", new Date(new java.util.Date().getTime()));
