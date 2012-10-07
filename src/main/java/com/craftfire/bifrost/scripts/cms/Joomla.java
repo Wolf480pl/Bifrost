@@ -1,6 +1,10 @@
 package com.craftfire.bifrost.scripts.cms;
 
+import java.security.SecureRandom;
 import java.sql.SQLException;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Random;
 
 import com.craftfire.commons.CraftCommons;
 import com.craftfire.commons.classes.Version;
@@ -12,10 +16,12 @@ import com.craftfire.commons.managers.DataManager;
 
 import com.craftfire.bifrost.classes.cms.CMSScript;
 import com.craftfire.bifrost.classes.cms.CMSUser;
+import com.craftfire.bifrost.classes.general.ScriptUser;
 import com.craftfire.bifrost.enums.Scripts;
 import com.craftfire.bifrost.exceptions.UnsupportedMethod;
 
 public class Joomla extends CMSScript {
+    private static Random random;
 
     /**
      * Default constructor for Joomla.
@@ -79,7 +85,7 @@ public class Joomla extends CMSScript {
     }
 
     @Override
-    public CMSUser getUser(int userid) throws SQLException, UnsupportedMethod {
+    public CMSUser getUser(int userid) throws SQLException {
         if (this.getDataManager().exist("users", "id", userid)) {
             CMSUser user = new CMSUser(this, userid, null, null);
             Results res = this.getDataManager().getResults("SELECT * FROM `" + this.getDataManager().getPrefix() + "users` WHERE `id` = '" + userid + "' LIMIT 1");
@@ -109,4 +115,83 @@ public class Joomla extends CMSScript {
         }
         return null;
     }
+
+    private String genSalt() {
+        StringBuffer buf = new StringBuffer();
+        if (random == null) {
+            random = new SecureRandom();
+        }
+        for (int i = 0; i < 32; ++i) {
+            buf.append(Integer.toString(random.nextInt(36), 36));
+        }
+        return buf.toString();
+    }
+
+    @Override
+    public void updateUser(ScriptUser user) throws SQLException {
+        HashMap<String, Object> data = new HashMap<String, Object>();
+        if (user.getPasswordSalt() == null) {
+            user.setPasswordSalt(genSalt());
+        }
+        try {
+            CraftCommons.convertHexToString(user.getPassword());
+        } catch (NumberFormatException e) {
+            user.setPassword(hashPassword(user.getPasswordSalt(), user.getPassword()));
+        }
+        data.put("name", user.getNickname());
+        data.put("username", user.getUsername());
+        data.put("email", user.getEmail());
+        data.put("password", user.getPassword() + ":" + user.getPasswordSalt());
+        if (getVersion().inVersionRange(getVersionRanges()[0])) {
+            data.put("usertype", user.getUserTitle());
+        }
+        data.put("registerDate", user.getRegDate());
+        data.put("lastvisitDate", user.getLastLogin());
+        if (user.isActivated()) {
+            if (getVersion().inVersionRange(getVersionRanges()[0]) || getVersion().inVersionRange(getVersionRanges()[1])) {
+                data.put("activation", "");
+            } else {
+                data.put("activation", "0");
+            }
+        }
+        getDataManager().updateFields(data, "users", "`id` = '" + user.getID() + "'");
+    }
+
+    @Override
+    public void createUser(ScriptUser user) throws SQLException {
+        HashMap<String, Object> data = new HashMap<String, Object>();
+        if (user.getPasswordSalt() == null) {
+            user.setPasswordSalt(genSalt());
+        }
+        try {
+            CraftCommons.convertHexToString(user.getPassword());
+        } catch (NumberFormatException e) {
+            user.setPassword(hashPassword(user.getPasswordSalt(), user.getPassword()));
+        }
+        if (user.getLastLogin() == null) {
+            user.setLastLogin(new Date());
+        }
+        if (user.getRegDate() == null) {
+            user.setRegDate(new Date());
+        }
+        data.put("name", user.getNickname());
+        data.put("username", user.getUsername());
+        data.put("email", user.getEmail());
+        data.put("password", user.getPassword() + ":" + user.getPasswordSalt());
+        if (getVersion().inVersionRange(getVersionRanges()[0])) {
+            data.put("usertype", user.getUserTitle());
+        }
+        data.put("registerDate", user.getRegDate());
+        data.put("lastvisitDate", user.getLastLogin());
+        if (user.isActivated()) {
+            if (getVersion().inVersionRange(getVersionRanges()[0]) || getVersion().inVersionRange(getVersionRanges()[1])) {
+                data.put("activation", "");
+            } else {
+                data.put("activation", "0");
+            }
+        }
+        getDataManager().insertFields(data, "users");
+        user.setID(getDataManager().getLastID("id", "users"));
+    }
+
 }
