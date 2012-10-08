@@ -120,7 +120,7 @@ public class Joomla extends CMSScript {
         return null;
     }
 
-    private String genSalt() {
+    protected String genSalt() {
         StringBuffer buf = new StringBuffer();
         if (random == null) {
             random = new SecureRandom();
@@ -210,7 +210,7 @@ public class Joomla extends CMSScript {
         List<DataRow> rows = res.getArray();
         Iterator<DataRow> it = rows.iterator();
         while (it.hasNext()) {
-            groups.add(getGroup(it.next().getIntField("id")));
+            groups.add(getHandle().getGroup(it.next().getIntField("id")));
         }
         return groups;
     }
@@ -222,16 +222,95 @@ public class Joomla extends CMSScript {
     }
 
     @Override
-    public Group getGroup(int groupid) throws SQLException {
+    public Group getGroup(int groupid) throws SQLException, UnsupportedMethod {
         boolean j15 = getVersion().inVersionRange(getVersionRanges()[0]);
         Results res = getDataManager().getResults("SELECT * FROM " + getDataManager().getPrefix() + (j15 ? "groups" : "usergroups") + "` WHERE `id` = '" + groupid + "' LIMIT 1");
         DataRow record = res.getFirstResult();
         if (record != null) {
             Group group = new Group(this, groupid, record.getStringField(j15 ? "name" : "title"));
-            // TODO: Fill the group with users;
+            List<ScriptUser> users = new ArrayList<ScriptUser>();
+            Results res1;
+            if (j15) {
+                res1 = getDataManager().getResults("SELECT `id` FROM `" + getDataManager().getPrefix() + "users` WHERE `gid` = '" + groupid + "'");
+            } else {
+                res1 = getDataManager().getResults("SELECT `user_id` FROM `" + getDataManager().getPrefix() + "user_usergroup_map` WHERE `group_id` = '" + groupid + "'");
+            }
+            List<DataRow> rows = res1.getArray();
+            Iterator<DataRow> it = rows.iterator();
+            while (it.hasNext()) {
+                users.add(getHandle().getUser(it.next().getIntField(j15 ? "id" : "user_id")));
+            }
+            group.setUsers(users);
+            group.setUserCount(users.size());
             return group;
         }
         return null;
     }
 
+    @Override
+    public Group getGroup(String group) throws SQLException, UnsupportedMethod {
+        return getHandle().getGroup(getGroupID(group));
+    }
+
+    @Override
+    public List<Group> getUserGroups(String username) throws SQLException, UnsupportedMethod {
+        int userid = getUserID(username);
+        List<Group> groups = new ArrayList<Group>();
+        boolean j15 = getVersion().inVersionRange(getVersionRanges()[0]);
+        Results res;
+        if (j15) {
+            res = getDataManager().getResults("SELECT `gid` FROM `" + getDataManager().getPrefix() + "users` WHERE `id` = '" + userid + "'");
+        } else {
+            res = getDataManager().getResults("SELECT `group_id` FROM `" + getDataManager().getPrefix() + "user_usergroup_map` WHERE `user_id` = '" + userid + "'");
+        }
+        Iterator<DataRow> it = res.getArray().iterator();
+        while (it.hasNext()) {
+            groups.add(getHandle().getGroup(it.next().getIntField(j15 ? "gid" : "group_id")));
+        }
+        return groups;
+    }
+
+    @Override
+    public void updateGroup(Group group) throws SQLException {
+        HashMap<String, Object> data = new HashMap<String, Object>();
+        boolean j15 = getVersion().inVersionRange(getVersionRanges()[0]);
+        data.put(j15 ? "name" : "title", group.getName());
+        getDataManager().updateFields(data, j15 ? "groups" : "usergroups", "`id` = '" + group.getID() + "'");
+        data.clear();
+        List<ScriptUser> users = group.getUsers();
+        if (!j15) {
+            getDataManager().executeQuery("DELETE FROM `" + getDataManager().getPrefix() + "user_usergroup_map` WHERE `group_id` = '" + group.getID() + "'");
+        }
+        setGroupUsers(j15, group.getID(), group.getUsers());
+    }
+
+    @Override
+    public void createGroup(Group group) throws SQLException {
+        HashMap<String, Object> data = new HashMap<String, Object>();
+        boolean j15 = getVersion().inVersionRange(getVersionRanges()[0]);
+        data.put(j15 ? "name" : "title", group.getName());
+        getDataManager().insertFields(data, j15 ? "groups" : "usergroups");
+        group.setID(getDataManager().getLastID("id", j15 ? "groups" : "usergroups"));
+        data.clear();
+        setGroupUsers(j15, group.getID(), group.getUsers());
+    }
+
+    protected void setGroupUsers(boolean j15, int groupid, List<ScriptUser> users) throws SQLException {
+        if (users == null) {
+            return;
+        }
+        HashMap<String, Object> data = new HashMap<String, Object>();
+        Iterator<ScriptUser> it = users.iterator();
+        while (it.hasNext()) {
+            int userid = it.next().getID();
+            data.put(j15 ? "gid" : "group_id", groupid);
+            if (j15) {
+                getDataManager().updateFields(data, "users", "`id` = '" + userid + "'");
+            } else {
+                data.put("user_id", userid);
+                getDataManager().insertFields(data, "user_usergroup_map");
+            }
+            data.clear();
+        }
+    }
 }
