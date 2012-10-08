@@ -2,8 +2,11 @@ package com.craftfire.bifrost.scripts.cms;
 
 import java.security.SecureRandom;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Random;
 
 import com.craftfire.commons.CraftCommons;
@@ -16,6 +19,7 @@ import com.craftfire.commons.managers.DataManager;
 
 import com.craftfire.bifrost.classes.cms.CMSScript;
 import com.craftfire.bifrost.classes.cms.CMSUser;
+import com.craftfire.bifrost.classes.general.Group;
 import com.craftfire.bifrost.classes.general.ScriptUser;
 import com.craftfire.bifrost.enums.Scripts;
 import com.craftfire.bifrost.exceptions.UnsupportedMethod;
@@ -89,8 +93,8 @@ public class Joomla extends CMSScript {
         if (this.getDataManager().exist("users", "id", userid)) {
             CMSUser user = new CMSUser(this, userid, null, null);
             Results res = this.getDataManager().getResults("SELECT * FROM `" + this.getDataManager().getPrefix() + "users` WHERE `id` = '" + userid + "' LIMIT 1");
-            if (res != null && res.getFirstResult() != null) {
-                DataRow record = res.getFirstResult();
+            DataRow record = res.getFirstResult();
+            if (record != null) {
                 String activation = record.getStringField("activation");
                 user.setActivated(activation.isEmpty() || activation.equals("0"));
                 user.setEmail(record.getStringField("email"));
@@ -192,6 +196,42 @@ public class Joomla extends CMSScript {
         }
         getDataManager().insertFields(data, "users");
         user.setID(getDataManager().getLastID("id", "users"));
+    }
+
+    @Override
+    public List<Group> getGroups(int limit) throws SQLException, UnsupportedMethod {
+        String limitstring = "";
+        boolean j15 = getVersion().inVersionRange(getVersionRanges()[0]);
+        List<Group> groups = new ArrayList<Group>();
+        if (limit > 0) {
+            limitstring = " LIMIT 0," + limit;
+        }
+        Results res = getDataManager().getResults("SELECT `id` FROM `" + getDataManager().getPrefix() + (j15 ? "groups`" : "usergroups`") + limitstring);
+        List<DataRow> rows = res.getArray();
+        Iterator<DataRow> it = rows.iterator();
+        while (it.hasNext()) {
+            groups.add(getGroup(it.next().getIntField("id")));
+        }
+        return groups;
+    }
+
+    @Override
+    public int getGroupID(String group) {
+        boolean j15 = getVersion().inVersionRange(getVersionRanges()[0]);
+        return getDataManager().getIntegerField((j15 ? "groups" : "usergroups"), "id", "`" + (j15 ? "name" : "title") + "` = '" + group + "'");
+    }
+
+    @Override
+    public Group getGroup(int groupid) throws SQLException {
+        boolean j15 = getVersion().inVersionRange(getVersionRanges()[0]);
+        Results res = getDataManager().getResults("SELECT * FROM " + getDataManager().getPrefix() + (j15 ? "groups" : "usergroups") + "` WHERE `id` = '" + groupid + "' LIMIT 1");
+        DataRow record = res.getFirstResult();
+        if (record != null) {
+            Group group = new Group(this, groupid, record.getStringField(j15 ? "name" : "title"));
+            // TODO: Fill the group with users;
+            return group;
+        }
+        return null;
     }
 
 }
