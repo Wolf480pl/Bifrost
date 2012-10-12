@@ -20,6 +20,7 @@ import com.craftfire.commons.managers.DataManager;
 import com.craftfire.bifrost.classes.cms.CMSScript;
 import com.craftfire.bifrost.classes.cms.CMSUser;
 import com.craftfire.bifrost.classes.general.Group;
+import com.craftfire.bifrost.classes.general.PrivateMessage;
 import com.craftfire.bifrost.classes.general.ScriptUser;
 import com.craftfire.bifrost.enums.Scripts;
 import com.craftfire.bifrost.exceptions.UnsupportedMethod;
@@ -312,5 +313,125 @@ public class Joomla extends CMSScript {
             }
             data.clear();
         }
+    }
+
+    @Override
+    public PrivateMessage getPM(int pmid) throws SQLException, UnsupportedMethod {
+        Results res = getDataManager().getResults("SELECT * FROM `" + getDataManager().getPrefix() + "messages` WHERE `message_id` = '" + pmid + "'");
+        DataRow row = res.getFirstResult();
+        if (row != null) {
+            PrivateMessage pm = new PrivateMessage(this, pmid);
+            pm.setSender(getHandle().getUser(row.getIntField("user_id_from")));
+            pm.setBody(row.getStringField("message"));
+            pm.setDate(row.getDateField("date_time"));
+            CMSUser recipient = getHandle().getUser(row.getIntField("user_id_to"));
+            List<ScriptUser> list = new ArrayList<ScriptUser>();
+            list.add(recipient);
+            pm.setRecipients(list);
+            pm.setRead(recipient, row.getBoolField("state"));
+            pm.setNew(recipient, !row.getBoolField("state"));
+            pm.setSubject(row.getStringField("subject"));
+            return pm;
+        }
+        return null;
+    }
+
+    @Override
+    public List<PrivateMessage> getPMs(int limit) throws SQLException, UnsupportedMethod {
+        String limitstring = "";
+        List<PrivateMessage> pms = new ArrayList<PrivateMessage>();
+        if (limit > 0) {
+            limitstring = " LIMIT 0," + limit;
+        }
+        Results res = getDataManager().getResults("SELECT `message_id` FROM `" + getDataManager().getPrefix() + "messages`" + limitstring);
+        Iterator<DataRow> it = res.getArray().iterator();
+        while (it.hasNext()) {
+            pms.add(getHandle().getPM(it.next().getIntField("message_id")));
+        }
+        return pms;
+    }
+
+    @Override
+    public List<PrivateMessage> getPMsSent(String username, int limit) throws UnsupportedMethod, SQLException {
+        String limitstring = "";
+        List<PrivateMessage> pms = new ArrayList<PrivateMessage>();
+        int userid = getHandle().getUserID(username);
+        if (limit > 0) {
+            limitstring = " LIMIT 0," + limit;
+        }
+        Results res = getDataManager().getResults("SELECT `message_id` FROM `" + getDataManager().getPrefix() + "messages` WHERE `user_id_from` = '" + userid + "'" + limitstring);
+        Iterator<DataRow> it = res.getArray().iterator();
+        while (it.hasNext()) {
+            pms.add(getHandle().getPM(it.next().getIntField("message_id")));
+        }
+        return pms;
+    }
+    
+    @Override
+    public List<PrivateMessage> getPMsReceived(String username, int limit) throws UnsupportedMethod, SQLException {
+        String limitstring = "";
+        List<PrivateMessage> pms = new ArrayList<PrivateMessage>();
+        int userid = getHandle().getUserID(username);
+        if (limit > 0) {
+            limitstring = " LIMIT 0," + limit;
+        }
+        Results res = getDataManager().getResults("SELECT `message_id` FROM `" + getDataManager().getPrefix() + "messages` WHERE `user_id_to` = '" + userid + "'" + limitstring);
+        Iterator<DataRow> it = res.getArray().iterator();
+        while (it.hasNext()) {
+            pms.add(getHandle().getPM(it.next().getIntField("message_id")));
+        }
+        return pms;
+    }
+
+    @Override
+    public int getPMCount() {
+        return getDataManager().getCount("messages");
+    }
+
+    @Override
+    public int getPMSentCount(String username) throws UnsupportedMethod {
+        int userid = getHandle().getUserID(username);
+        return getDataManager().getCount("messages", "`user_id_from` = '" + userid + "'");
+    }
+
+    @Override
+    public int getPMReceivedCount(String username) throws UnsupportedMethod {
+        int userid = getHandle().getUserID(username);
+        return getDataManager().getCount("messages", "`user_id_to` = '" + userid + "'");
+    }
+
+    @Override
+    public void updatePrivateMessage(PrivateMessage privateMessage) throws SQLException {
+        HashMap<String, Object> data = new HashMap<String, Object>();
+        if (privateMessage.getSender() != null) {
+            data.put("user_id_from", privateMessage.getSender().getID());
+        }
+        List<ScriptUser> recipients = privateMessage.getRecipients();
+        if (recipients != null && (!recipients.isEmpty())) {
+            data.put("user_id_to", recipients.get(0));
+            data.put("state", privateMessage.isRead(recipients.get(0)) ? 1 : 0);
+        }
+        data.put("date_time", privateMessage.getDate());
+        data.put("subject", privateMessage.getSubject());
+        data.put("message", privateMessage.getBody());
+        getDataManager().updateFields(data, "messages", "`message_id` = '" + privateMessage.getID() + "'");
+    }
+
+    @Override
+    public void createPrivateMessage(PrivateMessage privateMessage) throws SQLException {
+        HashMap<String, Object> data = new HashMap<String, Object>();
+        if (privateMessage.getSender() != null) {
+            data.put("user_id_from", privateMessage.getSender().getID());
+        }
+        List<ScriptUser> recipients = privateMessage.getRecipients();
+        if (recipients != null && (!recipients.isEmpty())) {
+            data.put("user_id_to", recipients.get(0));
+            data.put("state", privateMessage.isRead(recipients.get(0)) ? 1 : 0);
+        }
+        data.put("date_time", privateMessage.getDate());
+        data.put("subject", privateMessage.getSubject());
+        data.put("message", privateMessage.getBody());
+        getDataManager().insertFields(data, "messages");
+        privateMessage.setID(getDataManager().getLastID("message_id", "messages"));
     }
 }
