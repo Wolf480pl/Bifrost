@@ -10,12 +10,12 @@ import java.util.List;
 import java.util.Random;
 
 import com.craftfire.commons.CraftCommons;
-import com.craftfire.commons.classes.Version;
-import com.craftfire.commons.classes.VersionRange;
+import com.craftfire.commons.util.Version;
+import com.craftfire.commons.util.VersionRange;
 import com.craftfire.commons.database.DataRow;
 import com.craftfire.commons.database.Results;
-import com.craftfire.commons.enums.Encryption;
-import com.craftfire.commons.managers.DataManager;
+import com.craftfire.commons.encryption.Encryption;
+import com.craftfire.commons.database.DataManager;
 
 import com.craftfire.bifrost.classes.cms.CMSScript;
 import com.craftfire.bifrost.classes.cms.CMSUser;
@@ -23,7 +23,7 @@ import com.craftfire.bifrost.classes.general.Group;
 import com.craftfire.bifrost.classes.general.PrivateMessage;
 import com.craftfire.bifrost.classes.general.ScriptUser;
 import com.craftfire.bifrost.enums.Scripts;
-import com.craftfire.bifrost.exceptions.UnsupportedMethod;
+import com.craftfire.bifrost.exceptions.ScriptException;
 
 public class Joomla extends CMSScript {
     private static Random random;
@@ -80,12 +80,12 @@ public class Joomla extends CMSScript {
     }
 
     @Override
-    public CMSUser getLastRegUser() throws UnsupportedMethod, SQLException {
+    public CMSUser getLastRegUser() throws ScriptException, SQLException {
         return getHandle().getUser(getDataManager().getIntegerField("SELECT `id` FROM `" + getDataManager().getPrefix() + "users` ORDER BY `registerDate` DESC LIMIT 1"));
     }
 
     @Override
-    public CMSUser getUser(String username) throws UnsupportedMethod, SQLException {
+    public CMSUser getUser(String username) throws ScriptException, SQLException {
         return getHandle().getUser(getUserID(username));
     }
 
@@ -200,7 +200,7 @@ public class Joomla extends CMSScript {
     }
 
     @Override
-    public List<Group> getGroups(int limit) throws SQLException, UnsupportedMethod {
+    public List<Group> getGroups(int limit) throws SQLException, ScriptException {
         String limitstring = "";
         boolean j15 = getVersion().inVersionRange(getVersionRanges()[0]);
         List<Group> groups = new ArrayList<Group>();
@@ -223,7 +223,7 @@ public class Joomla extends CMSScript {
     }
 
     @Override
-    public Group getGroup(int groupid) throws SQLException, UnsupportedMethod {
+    public Group getGroup(int groupid) throws SQLException, ScriptException {
         boolean j15 = getVersion().inVersionRange(getVersionRanges()[0]);
         Results res = getDataManager().getResults("SELECT * FROM " + getDataManager().getPrefix() + (j15 ? "groups" : "usergroups") + "` WHERE `id` = '" + groupid + "' LIMIT 1");
         DataRow record = res.getFirstResult();
@@ -249,12 +249,12 @@ public class Joomla extends CMSScript {
     }
 
     @Override
-    public Group getGroup(String group) throws SQLException, UnsupportedMethod {
+    public Group getGroup(String group) throws SQLException, ScriptException {
         return getHandle().getGroup(getGroupID(group));
     }
 
     @Override
-    public List<Group> getUserGroups(String username) throws SQLException, UnsupportedMethod {
+    public List<Group> getUserGroups(String username) throws SQLException, ScriptException {
         int userid = getUserID(username);
         List<Group> groups = new ArrayList<Group>();
         boolean j15 = getVersion().inVersionRange(getVersionRanges()[0]);
@@ -316,7 +316,7 @@ public class Joomla extends CMSScript {
     }
 
     @Override
-    public PrivateMessage getPM(int pmid) throws SQLException, UnsupportedMethod {
+    public PrivateMessage getPM(int pmid) throws SQLException, ScriptException {
         Results res = getDataManager().getResults("SELECT * FROM `" + getDataManager().getPrefix() + "messages` WHERE `message_id` = '" + pmid + "'");
         DataRow row = res.getFirstResult();
         if (row != null) {
@@ -337,7 +337,7 @@ public class Joomla extends CMSScript {
     }
 
     @Override
-    public List<PrivateMessage> getPMs(int limit) throws SQLException, UnsupportedMethod {
+    public List<PrivateMessage> getPMs(int limit) throws SQLException, ScriptException {
         String limitstring = "";
         List<PrivateMessage> pms = new ArrayList<PrivateMessage>();
         if (limit > 0) {
@@ -352,7 +352,7 @@ public class Joomla extends CMSScript {
     }
 
     @Override
-    public List<PrivateMessage> getPMsSent(String username, int limit) throws UnsupportedMethod, SQLException {
+    public List<PrivateMessage> getPMsSent(String username, int limit) throws ScriptException, SQLException {
         String limitstring = "";
         List<PrivateMessage> pms = new ArrayList<PrivateMessage>();
         int userid = getHandle().getUserID(username);
@@ -368,7 +368,7 @@ public class Joomla extends CMSScript {
     }
     
     @Override
-    public List<PrivateMessage> getPMsReceived(String username, int limit) throws UnsupportedMethod, SQLException {
+    public List<PrivateMessage> getPMsReceived(String username, int limit) throws ScriptException, SQLException {
         String limitstring = "";
         List<PrivateMessage> pms = new ArrayList<PrivateMessage>();
         int userid = getHandle().getUserID(username);
@@ -389,13 +389,13 @@ public class Joomla extends CMSScript {
     }
 
     @Override
-    public int getPMSentCount(String username) throws UnsupportedMethod {
+    public int getPMSentCount(String username) throws ScriptException {
         int userid = getHandle().getUserID(username);
         return getDataManager().getCount("messages", "`user_id_from` = '" + userid + "'");
     }
 
     @Override
-    public int getPMReceivedCount(String username) throws UnsupportedMethod {
+    public int getPMReceivedCount(String username) throws ScriptException {
         int userid = getHandle().getUserID(username);
         return getDataManager().getCount("messages", "`user_id_to` = '" + userid + "'");
     }
